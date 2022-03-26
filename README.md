@@ -1,9 +1,10 @@
-# Custom Easysearch Widget
+# EZSearch Custom Widget
 
-Custom implementation of Easysearch Shopify app (Year/Make/Model), but generalized.
+Custom & much smaller & faster implementation of Easysearch Shopify app (Year/Make/Model), but generalized.
 
-- Svelte
-- Swiper js
+About 171% smaller bundle size & with much greater control.
+
+App URL: https://apps.shopify.com/easysearch
 
 ## Development
 

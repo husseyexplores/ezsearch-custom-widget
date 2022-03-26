@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="stylesheet" href="./src/styles.scss">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vite App</title>
+</head>
+
+<body>
+
+  <div class="EZS_Search" data-easysearch-root
+    data-ezs-csv-url="https://cdn.shopify.com/s/files/1/0562/5685/6217/t/20/assets/easysearch_database.csv?v=8702598794959813618"
+    data-ezs="search">
+
+    <form data-ezs-form>
+      <div>
+        <label>Year</label>
+        <select disabled data-ezs-filter="Year">
+          <option value="">Year</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Make</label>
+        <select disabled data-ezs-filter="Make">
+          <option value="">Make</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Model</label>
+        <select disabled data-ezs-filter="Model">
+          <option value="">Model</option>
+        </select>
+      </div>
+    </form>
+  </div>
+
+  <div class="EZS_Ftmnt" style="margin-top: 100px;"
+    data-easysearch-root
+    data-ezs-csv-url="https://cdn.shopify.com/s/files/1/0562/5685/6217/t/20/assets/easysearch_database.csv?v=8702598794959813618"
+    data-ezs="search"
+    data-ezs-state="pending"
+    data-ezs-product-tags='["2006-suzuki-boulevard-m109r-esi9589747"]'
+    >
+
+    <div class="EZS_Selects EZS_Ftmnt-questions">
+      <div>
+        <label>Year</label>
+        <select disabled data-ezs-filter="Year">
+          <option value="">Year</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Make</label>
+        <select disabled data-ezs-filter="Make">
+          <option value="">Make</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Model</label>
+        <select disabled data-ezs-filter="Model">
+          <option value="">Model</option>
+        </select>
+      </div>
+
+      <button type="button" data-ezs-trigger-verify>Verify</button>
+    </div>
+
+    <div class="EZS_Ftmnt-results">
+
+      <div class="EZS_Ftmnt-result EZS_Ftmnt-result--good">
+        <div class="EZS_Ftmnt-result-content">
+          <div class="EZS_Ftmnt-col--left">
+            <div class="EZS_Ftmnt-icon">
+              <svg width="18" viewBox="0 0 18 18">
+                <path
+                  d="M16.145,2.571c-0.272-0.273-0.718-0.273-0.99,0L6.92,10.804l-4.241-4.27 c-0.272-0.274-0.715-0.274-0.989,0L0.204,8.019c-0.272,0.271-0.272,0.717,0,0.99l6.217,6.258c0.272,0.271,0.715,0.271,0.99,0 L17.63,5.047c0.276-0.273,0.276-0.72,0-0.994L16.145,2.571z">
+                </path>
+              </svg>
+            </div>
+          </div>
+
+          <div class="EZS_Ftmnt-col--right">
+            <h4 class="EZS_Ftmnt-result-title">FITS YOUR: </h4>
+            <div data-ezs-filtered-title></div>
+
+            <button type="button" data-ezs-filter-reset>Change vehicle</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="EZS_Ftmnt-result EZS_Ftmnt-result--bad">
+        <div class="EZS_Ftmnt-result-content">
+          <div class="EZS_Ftmnt-icon">
+            <svg width="18" viewBox="0 0 18 18">
+              <path
+                d="M16.145,2.571c-0.272-0.273-0.718-0.273-0.99,0L6.92,10.804l-4.241-4.27 c-0.272-0.274-0.715-0.274-0.989,0L0.204,8.019c-0.272,0.271-0.272,0.717,0,0.99l6.217,6.258c0.272,0.271,0.715,0.271,0.99,0 L17.63,5.047c0.276-0.273,0.276-0.72,0-0.994L16.145,2.571z">
+              </path>
+            </svg>
+          </div>
+
+          <div>
+            <h4 class="EZS_Ftmnt-result-title">DOES NOT FITS YOUR: </h4>
+            <div data-ezs-filtered-title></div>
+
+            <button class="EZS_Inline-btn" type="button" data-ezs-filter-reset>Change vehicle</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="EZS_Ftmnt-result-bottom">
+        <a href="#" data-ezs-filtered-link>
+          Find products that fit your vehicle
+        </a>
+      </div>
+    </div>
+
+
+
+  </div>
+
+  <script type="module" src="/src/index.js"></script>
+</body>
+
+</html>

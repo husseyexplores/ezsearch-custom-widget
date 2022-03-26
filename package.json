@@ -1,0 +1,21 @@
+{
+  "name": "ezsearch-custom-widget",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "vite",
+    "prebuild": "rimraf dist",
+    "build": "vite build && npm run minify-build",
+    "minify-build": "node ./esbuild.js",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "eslint": "^8.11.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-import": "^2.25.4",
+    "prettier": "^2.6.0",
+    "rimraf": "^3.0.2",
+    "sass": "^1.49.9",
+    "vite": "^2.8.0"
+  }
+}
