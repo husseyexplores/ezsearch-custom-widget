@@ -1,10 +1,13 @@
 import { domReady } from './utils'
 import { hydrateEZSearch } from './ez-search'
+import './styles.scss'
+
+const IS_PROD = import.meta.env.MODE !== 'development'
 
 window.EZSearchDefaultInstances = []
 
 function initializeEZSearch() {
-  let searchRoots = Array.from(
+  const searchRoots = Array.from(
     document.querySelectorAll('[data-ezs="search"]:not([data-ezs-auto-initialize="false"])'),
   )
 
@@ -20,9 +23,12 @@ function initializeEZSearch() {
       autoSearch: false,
       cacheSeconds: 300,
       hasCsvHeaders: false,
-      onEvent: (ev, data) => {
-        console.log(ev, data, data?.select?.value)
-      },
+      onEvent: IS_PROD
+        ? null
+        : (ev, data) => {
+            let value = data?.select?.value
+            value ? console.log(ev, data, value) : console.log(ev, data)
+          },
     }).then(instance => {
       window.EZSearchDefaultInstances.push(instance)
 

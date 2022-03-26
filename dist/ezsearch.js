@@ -563,6 +563,7 @@ var __async = (__this, __arguments, generator) => {
       });
     });
   }
+  var styles = "";
   window.EZSearchDefaultInstances = [];
   function initializeEZSearch() {
     let searchRoots = Array.from(document.querySelectorAll('[data-ezs="search"]:not([data-ezs-auto-initialize="false"])'));

@@ -1,0 +1,110 @@
+select {
+  padding: 0 12px;
+  height: 30px;
+  margin-bottom: 10px;
+}
+
+@keyframes ezs_skeleton {
+  from {
+    background-position: 100% 0%;
+  }
+  to {
+    background-position: -100% 0%;
+  }
+}
+.EZS_Ftmnt {
+  position: relative;
+}
+.EZS_Ftmnt::after {
+  content: "";
+  background-image: linear-gradient(90deg, #e4e7eb, #ffffff, #e4e7eb);
+  background-size: 200% 100%;
+  width: 100%;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  animation-name: ezs_skeleton;
+  animation-duration: 2s;
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+}
+.EZS_Ftmnt[data-ezs-loaded]::after {
+  display: none;
+}
+.EZS_Ftmnt .EZS_Ftmnt-questions {
+  display: none;
+}
+.EZS_Ftmnt[data-ezs-state=pending] .EZS_Ftmnt-questions {
+  display: block;
+}
+.EZS_Ftmnt[data-ezs-state=pending] .EZS_Ftmnt-results {
+  display: none;
+}
+.EZS_Ftmnt .EZS_Ftmnt-result--good,
+.EZS_Ftmnt .EZS_Ftmnt-result--bad {
+  display: none;
+}
+.EZS_Ftmnt[data-ezs-state=valid] .EZS_Ftmnt-result--good {
+  display: block;
+}
+.EZS_Ftmnt[data-ezs-state=invalid] .EZS_Ftmnt-result--bad {
+  display: block;
+}
+
+.EZS_Ftmnt-result-content {
+  --ezs-ftmnt-icon: 20px;
+  display: grid;
+  grid-template-columns: calc(var(--ezs-ftmnt-icon) * 2) 1fr;
+  grid-gap: 15px;
+  padding: 10px;
+  border: 1px solid var(--ezs-color-icon-bg);
+}
+
+.EZS_Ftmnt-result--good {
+  --ezs-color-icon-bg: #55c63a;
+  --ezs-color-icon: #fff;
+}
+
+.EZS_Ftmnt-result--bad {
+  --ezs-color-icon-bg: #CC0000;
+  --ezs-color-icon: #fff;
+}
+
+.EZS_Ftmnt-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--ezs-color-icon-bg);
+  align-self: baseline;
+  height: 40px;
+  width: 40px;
+}
+.EZS_Ftmnt-icon svg {
+  width: var(--ezs-ftmnt-icon);
+  height: var(--ezs-ftmnt-icon);
+  fill: var(--ezs-color-icon);
+}
+
+.EZS_Ftmnt-result-bottom {
+  margin-top: 10px;
+}
+.EZS_Ftmnt-result-bottom [data-ezs-filtered-link] {
+  text-decoration: underline;
+}
+
+.EZS_Ftmnt-result-title {
+  margin-top: 0;
+  margin-bottom: 0px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.EZS_Ftmnt-col--right > * + * {
+  margin-top: 5px;
+}
+
+.EZS_Ftmnt-result-footer {
+  margin-top: 5px;
+}

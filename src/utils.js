@@ -148,8 +148,10 @@ export const CONSTS = {
     filtered_link: 'data-ezs-filtered-link',
     filtered_title: 'data-ezs-filtered-title',
     filter_trigger_verify: 'data-ezs-trigger-verify',
-    filter_reset: 'data-ezs-filter-reset',
+    goto_pending: 'data-ezs-goto-pending',
+    clear_cache: 'data-ezs-clear-cache',
     prod_tags: 'data-ezs-product-tags',
+    fitment_widget: 'data-ezs-fitment',
   },
 }
 
