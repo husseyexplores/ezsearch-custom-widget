@@ -25,26 +25,26 @@ export function validateFilter(filter) {
   return hasAtleastOne ? validated : null
 }
 
-export function iterateOverObjectTree(obj, fn) {
+export function iterateOverObjectTree(obj, fn, level = 0) {
   if (isObject(obj)) {
     let allKeys = Object.keys(obj)
     allKeys.forEach(k => {
       let v = obj[k]
-      iterateOverObjectTree(v, fn)
+      iterateOverObjectTree(v, fn, level + 1)
     })
-    fn(obj, allKeys)
+    fn(obj, allKeys, level)
   }
 
   if (Array.isArray(obj)) {
     obj.forEach(o => {
-      iterateOverObjectTree(o, fn)
+      iterateOverObjectTree(o, fn, level)
     })
   }
 
   return obj
 }
 
-export function createFiltersTree({ data, keys = [], path = [] }) {
+export function createFiltersTree({ data, keys = [], path = [], keysSort = [] }) {
   let res = {}
 
   keys.forEach((k, keyIndex) => {
@@ -68,9 +68,11 @@ export function createFiltersTree({ data, keys = [], path = [] }) {
   })
 
   return Object.keys(res).length > 0
-    ? iterateOverObjectTree(res, (obj, keys) => {
+    ? iterateOverObjectTree(res, (obj, keys, levelIndex) => {
         if (!obj._tag) {
-          obj._keys_ = keys.sort((a, b) => a.localeCompare(b))
+          const desc = keysSort[levelIndex]?.desc
+
+          obj._keys_ = keys.sort((a, b) => (desc ? b.localeCompare(a) : a.localeCompare(b)))
         }
       })
     : res

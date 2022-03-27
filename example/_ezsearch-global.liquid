@@ -1,0 +1,54 @@
+{%- capture easysearch_content -%}{%- render 'easysearch' -%}{%- endcapture -%}
+{%- liquid
+	assign csv_url = ''
+	assign parts = easysearch_content | split: 'easysearch.dbSRC' | last | split: '"'
+    if parts[1] contains '.csv'
+      assign csv_url = parts[1]
+    endif
+-%}
+
+<div class="EZS_Global" >
+
+  <div class="EZS_Search" data-easysearch-root
+       {% if csv_url != blank -%}data-ezs-csv-url="{{ csv_url }}"{% endif %}
+       data-ezs="search"
+       data-ezs-autosearch
+       data-ezs-collection-handle="suspensions"
+       {% if template.name == 'collection' %}data-collection-template="{{ collection.handle }}"{% endif %}
+       data-current-template="{{ template.name }}"
+  >
+
+  <h6 class="h4 EZS_Widget-title">Search By Motorcycle</h6>
+  <h6 class="h4 EZS_Widget-title" data-ezs-toggle-open role="button">Search By Motorcycle</h6>
+
+    <form data-ezs-form>
+      <div class="EZS_Select-item">
+        <label>Year</label>
+        <select disabled data-ezs-filter="Year" data-ezs-sort="desc">
+          <option value="">Year</option>
+        </select>
+      </div>
+
+      <div class="EZS_Select-item">
+        <label>Make</label>
+        <select disabled data-ezs-filter="Make">
+          <option value="">Make</option>
+        </select>
+      </div>
+
+      <div class="EZS_Select-item">
+        <label>Model</label>
+        <select disabled data-ezs-filter="Model">
+          <option value="">Model</option>
+        </select>
+      </div>
+
+      {%- if template.name == 'collection' and current_tags.size > 0 -%}
+      <button type="button" class="btn" disabled data-ezs-load-on-click data-ezs-clear-cache data-ezs-goto-base-collection>Clear</button>
+      {%- endif -%}
+
+      <button type="submit" class="btn" data-ezs-load-on-click disabled>Search</button>
+    </form>
+  </div>
+</div>
+

@@ -149,9 +149,13 @@ export const CONSTS = {
     filtered_title: 'data-ezs-filtered-title',
     filter_trigger_verify: 'data-ezs-trigger-verify',
     goto_pending: 'data-ezs-goto-pending',
+    goto_base_collection: 'data-ezs-goto-base-collection',
     clear_cache: 'data-ezs-clear-cache',
     prod_tags: 'data-ezs-product-tags',
     fitment_widget: 'data-ezs-fitment',
+    sort_by: 'data-ezs-sort', // "desc"
+    toggle_open: 'data-ezs-toggle-open',
+    loading_on_click: 'data-ezs-load-on-click',
   },
 }
 
@@ -179,15 +183,11 @@ export const domReady = () =>
     else document.addEventListener('DOMContentLoaded', () => fulfil())
   })
 
-export function on(element, eventName, handler, opts = {}) {
-  const listenerOptions = opts.listener || undefined
-  element.addEventListener(eventName, handler, listenerOptions)
+export function on(element, eventName, handler, listenerOptions, runImmediately = false) {
+  if (listenerOptions != null) element.addEventListener(eventName, handler, listenerOptions)
+  else element.addEventListener(eventName, handler)
 
-  if (typeof opts.runImmediately !== 'boolean') {
-    opts.runImmediately = true
-  }
-
-  if (opts.runImmediately) {
+  if (runImmediately) {
     handler()
   }
 

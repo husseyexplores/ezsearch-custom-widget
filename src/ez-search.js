@@ -46,6 +46,10 @@ function validateOptions({
   ) {
     throw new Error('Filter keys/selects mismatch')
   }
+  validated.filterKeysSortBy = validated.filterSelects.map(select => {
+    let desc = select.getAttribute(ATTR.sort_by) === 'desc'
+    return { desc, asc: !desc }
+  })
 
   let url = rootNode.getAttribute(ATTR.csv_url)
   if (typeof url !== 'string' && !fetchData) throw new Error('URL or `fetchData` must be specified')
@@ -65,6 +69,11 @@ function validateOptions({
   validated.triggerVerifyBtns = Array.from(
     rootNode.querySelectorAll(`[${ATTR.filter_trigger_verify}]`),
   )
+  validated.toggleOpenBtns = Array.from(rootNode.querySelectorAll(`[${ATTR.toggle_open}]`))
+
+  Array.from(rootNode.querySelectorAll(`[${ATTR.loading_on_click}]`)).forEach(el => {
+    el.__ezs_loadable = true
+  })
 
   validated.gotoPendingBtns = Array.from(rootNode.querySelectorAll(`[${ATTR.goto_pending}]`)).map(
     btn => {
@@ -74,6 +83,15 @@ function validateOptions({
       return btn
     },
   )
+
+  validated.gotoBaseCollectionBtns = Array.from(
+    rootNode.querySelectorAll(`[${ATTR.goto_base_collection}]`),
+  ).map(btn => {
+    let clearCache = btn.hasAttribute(ATTR.clear_cache)
+    if (clearCache) btn.__ezs_clear_cache = true
+
+    return btn
+  })
 
   validated.productTags =
     typeof productTags === 'string'
@@ -117,11 +135,15 @@ export async function hydrateEZSearch(options) {
     productTags,
     cacheSeconds,
     gotoPendingBtns,
+    gotoBaseCollectionBtns,
+    loadableClassBtns,
+    toggleOpenBtns,
     filteredLinks,
     filteredTitle,
     hasCsvHeaders,
     triggerVerifyBtns,
     isFitmentWidget,
+    filterKeysSortBy,
   } = validateOptions(options)
 
   if (rootNode.__ezs_hydrated) {
@@ -204,12 +226,22 @@ export async function hydrateEZSearch(options) {
     })
 
     if (autoSearch || forcePending || selectIndex === -1) {
-      afterOptionsUpdate({ forcePending, autoSearch: autoSearch || selectIndex === -1 })
+      afterOptionsUpdate({ forcePending, preventAutosearch: selectIndex === -1, activeFiltersList })
     }
     onEvent?.('SELECTION_UPDATE', { index: selectIndex, select: selects[selectIndex] })
   }
 
-  function afterOptionsUpdate({ forcePending = false, fromCache = false } = {}) {
+  function afterOptionsUpdate({
+    forcePending = false,
+    fromCache = false,
+    preventAutosearch = false,
+    activeFiltersList,
+  } = {}) {
+    let allSelected = (activeFiltersList || [...activeFilters]).every(
+      ([, filterValue]) => !!filterValue,
+    )
+    rootNode.setAttribute('data-ezs-selected-filters', allSelected ? 'all' : 'partial')
+
     // Check if there is any valid selection
     let selectedItem = forcePending
       ? null
@@ -271,8 +303,10 @@ export async function hydrateEZSearch(options) {
 
     selectedItem ? ls.set('selectedItem', JSON.stringify(selectedItem)) : ls.remove('selectedItem')
 
-    if (filterForm && autoSearch) {
-      filterForm.submit()
+    let canSubmit = finalHref && filterForm && autoSearch && !preventAutosearch
+    if (canSubmit) {
+      document.body.setAttribute('data-ezs-navigating', '')
+      canSubmit && filterForm.submit()
     }
   }
 
@@ -329,9 +363,7 @@ export async function hydrateEZSearch(options) {
     })
 
     selects.forEach((select, idx) => {
-      let removeListener = on(select, 'change', handleChange, {
-        runImmediately: false,
-      })
+      let removeListener = on(select, 'change', handleChange)
       onDestroyListeners.push(removeListener)
 
       select.options.length = 1
@@ -342,38 +374,58 @@ export async function hydrateEZSearch(options) {
       ...triggerVerifyBtns.map(btn => {
         if (btn.disabled) btn.disabled = false
 
-        return on(
-          btn,
-          'click',
-          () => {
-            afterOptionsUpdate()
-          },
-          {
-            runImmediately: false,
-          },
-        )
+        return on(btn, 'click', () => {
+          afterOptionsUpdate()
+        })
       }),
 
       ...gotoPendingBtns.map(btn => {
         if (btn.disabled) btn.disabled = false
 
-        return on(
-          btn,
-          'click',
-          () => {
-            let clearCache = btn.__ezs_clear_cache
-            if (clearCache) {
-              clearAllCache()
-              updateFilterValue(filterKeys[0], '')
-            }
+        return on(btn, 'click', () => {
+          let clearCache = btn.__ezs_clear_cache
+          if (clearCache) {
+            clearAllCache()
+            updateFilterValue(filterKeys[0], '')
+          }
 
-            afterOptionsUpdate({ forcePending: true })
-            selects[0].focus()
-          },
-          {
-            runImmediately: false,
-          },
-        )
+          afterOptionsUpdate({ forcePending: true })
+          selects[0].focus()
+        })
+      }),
+
+      ...gotoBaseCollectionBtns.map(btn => {
+        if (btn.disabled) btn.disabled = false
+
+        return on(btn, 'click', () => {
+          btn.disabled = true
+
+          let clearCache = btn.__ezs_clear_cache
+          if (clearCache) {
+            clearAllCache()
+            // updateFilterValue(filterKeys[0], '')
+          }
+
+          if (filterForm) {
+            filterForm.action = baseColPath
+            filterForm.submit()
+          } else {
+            window.location.href = baseColPath
+          }
+        })
+      }),
+
+      ...toggleOpenBtns.map(btn => {
+        return on(btn, 'click', () => {
+          rootNode.classList.toggle('is-open')
+        })
+      }),
+
+      on(rootNode, 'click', e => {
+        let target = e?.target
+        if (target && target.__ezs_loadable) {
+          target.classList.add('btn--loading')
+        }
       }),
     )
 
@@ -433,6 +485,7 @@ export async function hydrateEZSearch(options) {
         activeFilters: [...activeFilters],
         path: [],
         keys: filterKeys,
+        keysSort: filterKeysSortBy,
         getValue: (csvLineArray, key, keyIndex) => csvLineArray[keyIndex],
       })
 

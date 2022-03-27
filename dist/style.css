@@ -1,9 +1,3 @@
-select {
-  padding: 0 12px;
-  height: 30px;
-  margin-bottom: 10px;
-}
-
 @keyframes ezs_skeleton {
   from {
     background-position: 100% 0%;
@@ -12,10 +6,19 @@ select {
     background-position: -100% 0%;
   }
 }
-.EZS_Ftmnt {
-  position: relative;
+@keyframes ezs_fade_in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
 }
-.EZS_Ftmnt::after {
+.EZS_Ftmnt-questions {
+  position: relative;
+  animation: ezs_fade_in 0.15s ease-in;
+}
+.EZS_Ftmnt-questions::after {
   content: "";
   background-image: linear-gradient(90deg, #e4e7eb, #ffffff, #e4e7eb);
   background-size: 200% 100%;
@@ -26,11 +29,19 @@ select {
   top: 0;
   bottom: 0;
   animation-name: ezs_skeleton;
-  animation-duration: 2s;
+  animation-duration: 1s;
   animation-iteration-count: infinite;
   animation-timing-function: linear;
 }
-.EZS_Ftmnt[data-ezs-loaded]::after {
+
+.EZS_Ftmnt-results {
+  animation: ezs_fade_in 0.15s ease-in;
+}
+
+.EZS_Ftmnt {
+  position: relative;
+}
+.EZS_Ftmnt[data-ezs-loaded] .EZS_Ftmnt-questions::after {
   display: none;
 }
 .EZS_Ftmnt .EZS_Ftmnt-questions {
@@ -68,7 +79,7 @@ select {
 }
 
 .EZS_Ftmnt-result--bad {
-  --ezs-color-icon-bg: #CC0000;
+  --ezs-color-icon-bg: #cc0000;
   --ezs-color-icon: #fff;
 }
 

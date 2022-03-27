@@ -118,8 +118,14 @@ var __async = (__this, __arguments, generator) => {
       filtered_link: "data-ezs-filtered-link",
       filtered_title: "data-ezs-filtered-title",
       filter_trigger_verify: "data-ezs-trigger-verify",
-      filter_reset: "data-ezs-filter-reset",
-      prod_tags: "data-ezs-product-tags"
+      goto_pending: "data-ezs-goto-pending",
+      goto_base_collection: "data-ezs-goto-base-collection",
+      clear_cache: "data-ezs-clear-cache",
+      prod_tags: "data-ezs-product-tags",
+      fitment_widget: "data-ezs-fitment",
+      sort_by: "data-ezs-sort",
+      toggle_open: "data-ezs-toggle-open",
+      loading_on_click: "data-ezs-load-on-click"
     }
   };
   function last(list) {
@@ -132,36 +138,35 @@ var __async = (__this, __arguments, generator) => {
     else
       document.addEventListener("DOMContentLoaded", () => fulfil());
   });
-  function on(element, eventName, handler, opts = {}) {
-    const listenerOptions = opts.listener || void 0;
-    element.addEventListener(eventName, handler, listenerOptions);
-    if (typeof opts.runImmediately !== "boolean") {
-      opts.runImmediately = true;
-    }
-    if (opts.runImmediately) {
+  function on(element, eventName, handler, listenerOptions, runImmediately = false) {
+    if (listenerOptions != null)
+      element.addEventListener(eventName, handler, listenerOptions);
+    else
+      element.addEventListener(eventName, handler);
+    if (runImmediately) {
       handler();
     }
     return function cleanup() {
       element.removeEventListener(eventName, handler);
     };
   }
-  function iterateOverObjectTree(obj, fn) {
+  function iterateOverObjectTree(obj, fn, level = 0) {
     if (isObject(obj)) {
       let allKeys = Object.keys(obj);
       allKeys.forEach((k) => {
         let v = obj[k];
-        iterateOverObjectTree(v, fn);
+        iterateOverObjectTree(v, fn, level + 1);
       });
-      fn(obj, allKeys);
+      fn(obj, allKeys, level);
     }
     if (Array.isArray(obj)) {
       obj.forEach((o) => {
-        iterateOverObjectTree(o, fn);
+        iterateOverObjectTree(o, fn, level);
       });
     }
     return obj;
   }
-  function createFiltersTree({ data, keys = [], path = [] }) {
+  function createFiltersTree({ data, keys = [], path = [], keysSort = [] }) {
     let res = {};
     keys.forEach((k, keyIndex) => {
       let isLastKeyIndex = keyIndex === keys.length - 1;
@@ -182,9 +187,11 @@ var __async = (__this, __arguments, generator) => {
         resInnerObj[value] = isLastKeyIndex ? item : {};
       });
     });
-    return Object.keys(res).length > 0 ? iterateOverObjectTree(res, (obj, keys2) => {
+    return Object.keys(res).length > 0 ? iterateOverObjectTree(res, (obj, keys2, levelIndex) => {
+      var _a;
       if (!obj._tag) {
-        obj._keys_ = keys2.sort((a, b) => a.localeCompare(b));
+        const desc = (_a = keysSort[levelIndex]) == null ? void 0 : _a.desc;
+        obj._keys_ = keys2.sort((a, b) => desc ? b.localeCompare(a) : a.localeCompare(b));
       }
     }) : res;
   }
@@ -216,27 +223,32 @@ var __async = (__this, __arguments, generator) => {
       return (value == null ? void 0 : value[filterValue]) || null;
     }, filterTree);
   }
+  const getKey = (key) => `ezs_${key}`;
+  const expiryKey = (key) => `${key}__expiresIn`;
   function remove(key) {
-    window.localStorage.removeItem(key);
-    window.localStorage.removeItem(key + "_expiresIn");
+    const _key = getKey(key);
+    window.localStorage.removeItem(_key);
+    window.localStorage.removeItem(expiryKey(_key));
     return true;
   }
   function get(key) {
+    const _key = getKey(key);
     let now = Date.now();
-    let expiresIn = Number(window.localStorage.getItem(key + "_expiresIn") || "0");
+    let expiresIn = Number(window.localStorage.getItem(expiryKey(_key)) || "0");
     if (expiresIn < now) {
-      remove(key);
+      remove(_key);
       return null;
     } else {
-      return window.localStorage.getItem(key);
+      return window.localStorage.getItem(_key);
     }
   }
   function set(key, value, expires = 60 * 5) {
+    const _key = getKey(key);
     expires = Math.abs(expires);
     let now = Date.now();
     let expiry = now + expires * 1e3;
-    window.localStorage.setItem(key, value);
-    window.localStorage.setItem(key + "_expiresIn", expiry);
+    window.localStorage.setItem(_key, value);
+    window.localStorage.setItem(expiryKey(_key), expiry);
     return true;
   }
   const { ATTR } = CONSTS;
@@ -249,7 +261,8 @@ var __async = (__this, __arguments, generator) => {
     autoSearch = false,
     productTags = null,
     cacheSeconds,
-    hasCsvHeaders = false
+    hasCsvHeaders = false,
+    isFitmentWidget = false
   } = {}) {
     let validated = {};
     if (!(rootNode instanceof HTMLElement))
@@ -264,6 +277,10 @@ var __async = (__this, __arguments, generator) => {
     if (validated.filterKeys.length < 1 || validated.filterSelects.length !== validated.filterKeys.length) {
       throw new Error("Filter keys/selects mismatch");
     }
+    validated.filterKeysSortBy = validated.filterSelects.map((select) => {
+      let desc = select.getAttribute(ATTR.sort_by) === "desc";
+      return { desc, asc: !desc };
+    });
     let url = rootNode.getAttribute(ATTR.csv_url);
     if (typeof url !== "string" && !fetchData)
       throw new Error("URL or `fetchData` must be specified");
@@ -271,13 +288,24 @@ var __async = (__this, __arguments, generator) => {
     validated.onEvent = typeof onEvent === "function" ? onEvent : null;
     validated.autoSearch = !!autoSearch || rootNode.hasAttribute(ATTR.auto_search);
     validated.hasCsvHeaders = !!hasCsvHeaders || rootNode.hasAttribute(ATTR.csv_headers);
+    validated.isFitmentWidget = !!isFitmentWidget || rootNode.hasAttribute(ATTR.fitment_widget);
     validated.filteredLinks = Array.from(rootNode.querySelectorAll(`a[${ATTR.filtered_link}]`));
     validated.filteredTitle = Array.from(rootNode.querySelectorAll(`[${ATTR.filtered_title}]`));
     validated.triggerVerifyBtns = Array.from(rootNode.querySelectorAll(`[${ATTR.filter_trigger_verify}]`));
-    validated.resetFilterBtns = Array.from(rootNode.querySelectorAll(`[${ATTR.filter_reset}]`)).map((btn) => {
-      let hardReset = btn.getAttribute(ATTR.filter_reset) === "hard";
-      if (hardReset)
-        btn.__ezs_hard_reset = true;
+    validated.toggleOpenBtns = Array.from(rootNode.querySelectorAll(`[${ATTR.toggle_open}]`));
+    Array.from(rootNode.querySelectorAll(`[${ATTR.loading_on_click}]`)).forEach((el) => {
+      el.__ezs_loadable = true;
+    });
+    validated.gotoPendingBtns = Array.from(rootNode.querySelectorAll(`[${ATTR.goto_pending}]`)).map((btn) => {
+      let clearCache = btn.hasAttribute(ATTR.clear_cache);
+      if (clearCache)
+        btn.__ezs_clear_cache = true;
+      return btn;
+    });
+    validated.gotoBaseCollectionBtns = Array.from(rootNode.querySelectorAll(`[${ATTR.goto_base_collection}]`)).map((btn) => {
+      let clearCache = btn.hasAttribute(ATTR.clear_cache);
+      if (clearCache)
+        btn.__ezs_clear_cache = true;
       return btn;
     });
     validated.productTags = typeof productTags === "string" ? splitOnComma(productTags) : Array.isArray(productTags) ? productTags : null;
@@ -313,11 +341,16 @@ var __async = (__this, __arguments, generator) => {
         autoSearch,
         productTags,
         cacheSeconds,
-        resetFilterBtns,
+        gotoPendingBtns,
+        gotoBaseCollectionBtns,
+        loadableClassBtns,
+        toggleOpenBtns,
         filteredLinks,
         filteredTitle,
         hasCsvHeaders,
-        triggerVerifyBtns
+        triggerVerifyBtns,
+        isFitmentWidget,
+        filterKeysSortBy
       } = validateOptions(options);
       if (rootNode.__ezs_hydrated) {
         log("Already hydrated");
@@ -329,6 +362,7 @@ var __async = (__this, __arguments, generator) => {
           rootNode.__ezs_hydrated = false;
         }
       ];
+      const baseColPath = `/collections/${baseColHandle}`;
       const useCache = cacheSeconds && cacheSeconds > 0;
       const prodcutTagsLookup = productTags && productTags.length > 0 ? productTags.reduce((lookup, tag) => {
         lookup[tag] = true;
@@ -372,13 +406,20 @@ var __async = (__this, __arguments, generator) => {
             });
           }
         });
-        if (autoSearch || forcePending) {
-          afterOptionsUpdate(forcePending);
+        if (autoSearch || forcePending || selectIndex === -1) {
+          afterOptionsUpdate({ forcePending, preventAutosearch: selectIndex === -1, activeFiltersList });
         }
         onEvent == null ? void 0 : onEvent("SELECTION_UPDATE", { index: selectIndex, select: selects[selectIndex] });
       }
-      function afterOptionsUpdate({ forcePending = false } = {}) {
-        let selectedItem = forcePending ? null : getSelectedItem({ keys: filterKeys, activeFilters, filterTree });
+      function afterOptionsUpdate({
+        forcePending = false,
+        fromCache = false,
+        preventAutosearch = false,
+        activeFiltersList
+      } = {}) {
+        let allSelected = (activeFiltersList || [...activeFilters]).every(([, filterValue]) => !!filterValue);
+        rootNode.setAttribute("data-ezs-selected-filters", allSelected ? "all" : "partial");
+        let selectedItem = forcePending ? null : fromCache ? safeJsonParse(get("selectedItem"), "null") : getSelectedItem({ keys: filterKeys, activeFilters, filterTree });
         let finalHref = selectedItem == null ? void 0 : selectedItem._path;
         if (prodcutTagsLookup) {
           let tag = selectedItem == null ? void 0 : selectedItem._tag;
@@ -419,8 +460,11 @@ var __async = (__this, __arguments, generator) => {
         filteredTitle.forEach((el) => {
           el.textContent = selectedItemTitle;
         });
-        if (filterForm && autoSearch) {
-          filterForm.submit();
+        selectedItem ? set("selectedItem", JSON.stringify(selectedItem)) : remove("selectedItem");
+        let canSubmit = finalHref && filterForm && autoSearch && !preventAutosearch;
+        if (canSubmit) {
+          document.body.setAttribute("data-ezs-navigating", "");
+          canSubmit && filterForm.submit();
         }
       }
       function handleChange(event) {
@@ -450,6 +494,10 @@ var __async = (__this, __arguments, generator) => {
         activeFilters.set(label, value);
         updateOptions({ selectIndex: filterIndex, updateSelectValue: true, forcePending: true });
       }
+      function clearAllCache() {
+        remove("selectedItem");
+        filterKeys.forEach((key) => remove(key));
+      }
       function setupListeners(selects2) {
         let firstOptions = selects2.map((select, idx) => {
           select.__ezs_index = idx;
@@ -462,23 +510,55 @@ var __async = (__this, __arguments, generator) => {
           return firstOption;
         });
         selects2.forEach((select, idx) => {
-          let removeListener = on(select, "change", handleChange, {
-            runImmediately: false
-          });
+          let removeListener = on(select, "change", handleChange);
           onDestroyListeners.push(removeListener);
           select.options.length = 1;
           select.options[0] = firstOptions[idx];
         });
-        onDestroyListeners.push(...triggerVerifyBtns.map((btn) => on(btn, "click", () => {
-          afterOptionsUpdate();
-        }, {
-          runImmediately: false
-        })), ...resetFilterBtns.map((btn) => on(btn, "click", () => {
-          afterOptionsUpdate({ forcePending: true });
-          selects2[0].focus();
-        }, {
-          runImmediately: false
-        })));
+        onDestroyListeners.push(...triggerVerifyBtns.map((btn) => {
+          if (btn.disabled)
+            btn.disabled = false;
+          return on(btn, "click", () => {
+            afterOptionsUpdate();
+          });
+        }), ...gotoPendingBtns.map((btn) => {
+          if (btn.disabled)
+            btn.disabled = false;
+          return on(btn, "click", () => {
+            let clearCache = btn.__ezs_clear_cache;
+            if (clearCache) {
+              clearAllCache();
+              updateFilterValue(filterKeys[0], "");
+            }
+            afterOptionsUpdate({ forcePending: true });
+            selects2[0].focus();
+          });
+        }), ...gotoBaseCollectionBtns.map((btn) => {
+          if (btn.disabled)
+            btn.disabled = false;
+          return on(btn, "click", () => {
+            btn.disabled = true;
+            let clearCache = btn.__ezs_clear_cache;
+            if (clearCache) {
+              clearAllCache();
+            }
+            if (filterForm) {
+              filterForm.action = baseColPath;
+              filterForm.submit();
+            } else {
+              window.location.href = baseColPath;
+            }
+          });
+        }), ...toggleOpenBtns.map((btn) => {
+          return on(btn, "click", () => {
+            rootNode.classList.toggle("is-open");
+          });
+        }), on(rootNode, "click", (e) => {
+          let target = e == null ? void 0 : e.target;
+          if (target && target.__ezs_loadable) {
+            target.classList.add("btn--loading");
+          }
+        }));
         updateOptions({ selectIndex: -1 });
       }
       function prepareFilterTree() {
@@ -524,6 +604,7 @@ var __async = (__this, __arguments, generator) => {
               activeFilters: [...activeFilters],
               path: [],
               keys: filterKeys,
+              keysSort: filterKeysSortBy,
               getValue: (csvLineArray, key, keyIndex) => csvLineArray[keyIndex]
             });
             return tree;
@@ -532,15 +613,21 @@ var __async = (__this, __arguments, generator) => {
           return fetchPromise;
         });
       }
+      function updateTagValidityEarly() {
+        if (isFitmentWidget) {
+          afterOptionsUpdate({ fromCache: true });
+        }
+      }
       function afterHydrate() {
         rootNode.setAttribute("data-ezs-loaded", "true");
       }
       function main() {
         return __async(this, null, function* () {
-          return prepareFilterTree().then((tree) => {
+          updateTagValidityEarly();
+          return prepareFilterTree().then((tree) => __async(this, null, function* () {
             filterTree = tree;
             setupListeners(selects);
-          }).then(() => {
+          })).then(() => {
             afterHydrate();
           });
         });
@@ -552,6 +639,7 @@ var __async = (__this, __arguments, generator) => {
             return [...activeFilters];
           },
           updateFilterValue,
+          clearAllCache,
           destory() {
             selects.forEach((select) => {
               select.options.length = 1;
@@ -566,7 +654,7 @@ var __async = (__this, __arguments, generator) => {
   var styles = "";
   window.EZSearchDefaultInstances = [];
   function initializeEZSearch() {
-    let searchRoots = Array.from(document.querySelectorAll('[data-ezs="search"]:not([data-ezs-auto-initialize="false"])'));
+    const searchRoots = Array.from(document.querySelectorAll('[data-ezs="search"]:not([data-ezs-auto-initialize="false"])'));
     searchRoots.forEach((rootNode) => {
       document.dispatchEvent(new CustomEvent("EZSearch_Loading", {
         detail: rootNode
@@ -576,10 +664,7 @@ var __async = (__this, __arguments, generator) => {
         autoSearch: false,
         cacheSeconds: 300,
         hasCsvHeaders: false,
-        onEvent: (ev, data) => {
-          var _a;
-          console.log(ev, data, (_a = data == null ? void 0 : data.select) == null ? void 0 : _a.value);
-        }
+        onEvent: null
       }).then((instance) => {
         window.EZSearchDefaultInstances.push(instance);
         document.dispatchEvent(new CustomEvent("EZSearch_Loaded", {
