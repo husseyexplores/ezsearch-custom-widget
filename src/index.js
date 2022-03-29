@@ -20,9 +20,6 @@ function initializeEZSearch() {
 
     hydrateEZSearch({
       rootNode,
-      autoSearch: false,
-      cacheSeconds: 300,
-      hasCsvHeaders: false,
       onEvent: IS_PROD
         ? null
         : (ev, data) => {

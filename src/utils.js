@@ -150,12 +150,15 @@ export const CONSTS = {
     filter_trigger_verify: 'data-ezs-trigger-verify',
     goto_pending: 'data-ezs-goto-pending',
     goto_base_collection: 'data-ezs-goto-base-collection',
+    pre_clear_cache: 'data-ezs-clear-cache',
     clear_cache: 'data-ezs-clear-cache',
+    cache_seconds: 'data-ezs-cache-seconds',
     prod_tags: 'data-ezs-product-tags',
     fitment_widget: 'data-ezs-fitment',
     sort_by: 'data-ezs-sort', // "desc"
     toggle_open: 'data-ezs-toggle-open',
     loading_on_click: 'data-ezs-load-on-click',
+    loading_btn_class: 'data-ezs-loading-class',
   },
 }
 

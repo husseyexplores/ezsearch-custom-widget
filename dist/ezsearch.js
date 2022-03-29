@@ -120,12 +120,15 @@ var __async = (__this, __arguments, generator) => {
       filter_trigger_verify: "data-ezs-trigger-verify",
       goto_pending: "data-ezs-goto-pending",
       goto_base_collection: "data-ezs-goto-base-collection",
+      pre_clear_cache: "data-ezs-clear-cache",
       clear_cache: "data-ezs-clear-cache",
+      cache_seconds: "data-ezs-cache-seconds",
       prod_tags: "data-ezs-product-tags",
       fitment_widget: "data-ezs-fitment",
       sort_by: "data-ezs-sort",
       toggle_open: "data-ezs-toggle-open",
-      loading_on_click: "data-ezs-load-on-click"
+      loading_on_click: "data-ezs-load-on-click",
+      loading_btn_class: "data-ezs-loading-class"
     }
   };
   function last(list) {
@@ -260,9 +263,10 @@ var __async = (__this, __arguments, generator) => {
     onEvent,
     autoSearch = false,
     productTags = null,
-    cacheSeconds,
+    cacheSeconds = 300,
     hasCsvHeaders = false,
-    isFitmentWidget = false
+    isFitmentWidget = false,
+    loadingBtnClass = "btn--loading"
   } = {}) {
     let validated = {};
     if (!(rootNode instanceof HTMLElement))
@@ -289,6 +293,9 @@ var __async = (__this, __arguments, generator) => {
     validated.autoSearch = !!autoSearch || rootNode.hasAttribute(ATTR.auto_search);
     validated.hasCsvHeaders = !!hasCsvHeaders || rootNode.hasAttribute(ATTR.csv_headers);
     validated.isFitmentWidget = !!isFitmentWidget || rootNode.hasAttribute(ATTR.fitment_widget);
+    validated.loadingBtnClass = (typeof loadingBtnClass == "string" ? loadingBtnClass : rootNode.getAttribute(ATTR.loading_btn_class) || "").split(" ").filter(Boolean);
+    if (validated.loadingBtnClass.length === 0)
+      validated.loadingBtnClass = null;
     validated.filteredLinks = Array.from(rootNode.querySelectorAll(`a[${ATTR.filtered_link}]`));
     validated.filteredTitle = Array.from(rootNode.querySelectorAll(`[${ATTR.filtered_title}]`));
     validated.triggerVerifyBtns = Array.from(rootNode.querySelectorAll(`[${ATTR.filter_trigger_verify}]`));
@@ -313,8 +320,12 @@ var __async = (__this, __arguments, generator) => {
       let tags = rootNode.getAttribute(ATTR.prod_tags);
       validated.productTags = safeJsonParse(tags) || splitOnComma(tags);
     }
-    cacheSeconds = typeof cacheSeconds === "number" ? Math.trunc(cacheSeconds) : 0;
-    validated.cacheSeconds = cacheSeconds > 0 ? cacheSeconds : null;
+    cacheSeconds = rootNode.getAttribute(ATTR.cache_seconds) || cacheSeconds;
+    if (typeof cacheSeconds === "string") {
+      cacheSeconds = Number(cacheSeconds) || 300;
+    }
+    validated.cacheSeconds = typeof cacheSeconds === "number" ? Math.max(Math.trunc(cacheSeconds), 0) : 0;
+    validated.preClearCache = rootNode.hasAttribute(ATTR.pre_clear_cache);
     if (typeof url === "string")
       validated.url = url;
     if (typeof fetchData === "function")
@@ -341,9 +352,10 @@ var __async = (__this, __arguments, generator) => {
         autoSearch,
         productTags,
         cacheSeconds,
+        preClearCache,
         gotoPendingBtns,
         gotoBaseCollectionBtns,
-        loadableClassBtns,
+        loadingBtnClass,
         toggleOpenBtns,
         filteredLinks,
         filteredTitle,
@@ -363,14 +375,14 @@ var __async = (__this, __arguments, generator) => {
         }
       ];
       const baseColPath = `/collections/${baseColHandle}`;
-      const useCache = cacheSeconds && cacheSeconds > 0;
+      const canCache = cacheSeconds && cacheSeconds > 0;
       const prodcutTagsLookup = productTags && productTags.length > 0 ? productTags.reduce((lookup, tag) => {
         lookup[tag] = true;
         return lookup;
       }, {}) : null;
       const activeFilters = new Map(Array.from({ length: filterKeys.length }, (_, i) => [
         filterKeys[i],
-        !useCache ? "" : get(filterKeys[i]) || ""
+        !canCache || preClearCache ? "" : get(filterKeys[i]) || ""
       ]));
       let filterTree = null;
       function updateOptions({ selectIndex, updateSelectValue = false, forcePending = false } = {}) {
@@ -388,7 +400,7 @@ var __async = (__this, __arguments, generator) => {
           const filterOptions = (filterObject == null ? void 0 : filterObject._keys_) || [];
           const hasFilterOptions = Array.isArray(filterOptions) && filterOptions.length > 0;
           select.disabled = !hasFilterOptions;
-          if (useCache) {
+          if (canCache) {
             if (filterValue) {
               set(label, filterValue, cacheSeconds);
             } else {
@@ -556,7 +568,9 @@ var __async = (__this, __arguments, generator) => {
         }), on(rootNode, "click", (e) => {
           let target = e == null ? void 0 : e.target;
           if (target && target.__ezs_loadable) {
-            target.classList.add("btn--loading");
+            loadingBtnClass == null ? void 0 : loadingBtnClass.forEach((clx) => {
+              target.classList.add(clx);
+            });
           }
         }));
         updateOptions({ selectIndex: -1 });
@@ -623,6 +637,9 @@ var __async = (__this, __arguments, generator) => {
       }
       function main() {
         return __async(this, null, function* () {
+          if (preClearCache) {
+            clearAllCache();
+          }
           updateTagValidityEarly();
           return prepareFilterTree().then((tree) => __async(this, null, function* () {
             filterTree = tree;
@@ -661,9 +678,6 @@ var __async = (__this, __arguments, generator) => {
       }));
       hydrateEZSearch({
         rootNode,
-        autoSearch: false,
-        cacheSeconds: 300,
-        hasCsvHeaders: false,
         onEvent: null
       }).then((instance) => {
         window.EZSearchDefaultInstances.push(instance);

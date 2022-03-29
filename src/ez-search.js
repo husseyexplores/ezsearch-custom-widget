@@ -21,9 +21,10 @@ function validateOptions({
   onEvent,
   autoSearch = false,
   productTags = null,
-  cacheSeconds,
+  cacheSeconds = 300,
   hasCsvHeaders = false,
   isFitmentWidget = false,
+  loadingBtnClass = 'btn--loading',
 } = {}) {
   let validated = {}
 
@@ -63,6 +64,14 @@ function validateOptions({
   validated.autoSearch = !!autoSearch || rootNode.hasAttribute(ATTR.auto_search)
   validated.hasCsvHeaders = !!hasCsvHeaders || rootNode.hasAttribute(ATTR.csv_headers)
   validated.isFitmentWidget = !!isFitmentWidget || rootNode.hasAttribute(ATTR.fitment_widget)
+  validated.loadingBtnClass = (
+    typeof loadingBtnClass == 'string'
+      ? loadingBtnClass
+      : rootNode.getAttribute(ATTR.loading_btn_class) || ''
+  )
+    .split(' ')
+    .filter(Boolean)
+  if (validated.loadingBtnClass.length === 0) validated.loadingBtnClass = null
 
   validated.filteredLinks = Array.from(rootNode.querySelectorAll(`a[${ATTR.filtered_link}]`))
   validated.filteredTitle = Array.from(rootNode.querySelectorAll(`[${ATTR.filtered_title}]`))
@@ -105,8 +114,13 @@ function validateOptions({
     validated.productTags = safeJsonParse(tags) || splitOnComma(tags)
   }
 
-  cacheSeconds = typeof cacheSeconds === 'number' ? Math.trunc(cacheSeconds) : 0
-  validated.cacheSeconds = cacheSeconds > 0 ? cacheSeconds : null
+  cacheSeconds = rootNode.getAttribute(ATTR.cache_seconds) || cacheSeconds
+  if (typeof cacheSeconds === 'string') {
+    cacheSeconds = Number(cacheSeconds) || 300
+  }
+  validated.cacheSeconds =
+    typeof cacheSeconds === 'number' ? Math.max(Math.trunc(cacheSeconds), 0) : 0
+  validated.preClearCache = rootNode.hasAttribute(ATTR.pre_clear_cache)
 
   if (typeof url === 'string') validated.url = url
   if (typeof fetchData === 'function') validated.fetchData = fetchData
@@ -134,9 +148,10 @@ export async function hydrateEZSearch(options) {
     autoSearch,
     productTags,
     cacheSeconds,
+    preClearCache,
     gotoPendingBtns,
     gotoBaseCollectionBtns,
-    loadableClassBtns,
+    loadingBtnClass,
     toggleOpenBtns,
     filteredLinks,
     filteredTitle,
@@ -159,7 +174,7 @@ export async function hydrateEZSearch(options) {
   ]
 
   const baseColPath = `/collections/${baseColHandle}`
-  const useCache = cacheSeconds && cacheSeconds > 0
+  const canCache = cacheSeconds && cacheSeconds > 0
   const prodcutTagsLookup =
     productTags && productTags.length > 0
       ? productTags.reduce((lookup, tag) => {
@@ -171,7 +186,7 @@ export async function hydrateEZSearch(options) {
   const activeFilters = new Map(
     Array.from({ length: filterKeys.length }, (_, i) => [
       filterKeys[i],
-      !useCache ? '' : ls.get(filterKeys[i]) || '',
+      !canCache || preClearCache ? '' : ls.get(filterKeys[i]) || '',
     ]),
   )
 
@@ -196,7 +211,7 @@ export async function hydrateEZSearch(options) {
       const hasFilterOptions = Array.isArray(filterOptions) && filterOptions.length > 0
       select.disabled = !hasFilterOptions
 
-      if (useCache) {
+      if (canCache) {
         if (filterValue) {
           ls.set(label, filterValue, cacheSeconds)
         } else {
@@ -424,7 +439,9 @@ export async function hydrateEZSearch(options) {
       on(rootNode, 'click', e => {
         let target = e?.target
         if (target && target.__ezs_loadable) {
-          target.classList.add('btn--loading')
+          loadingBtnClass?.forEach(clx => {
+            target.classList.add(clx)
+          })
         }
       }),
     )
@@ -512,6 +529,10 @@ export async function hydrateEZSearch(options) {
   // const sleep = (ms = 2500) => new Promise(fulfil => setTimeout(fulfil, ms))
 
   async function main() {
+    if (preClearCache) {
+      clearAllCache()
+    }
+
     updateTagValidityEarly()
 
     return prepareFilterTree()
