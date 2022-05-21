@@ -13,9 +13,11 @@
        {% if csv_url != blank -%}data-ezs-csv-url="{{ csv_url }}"{% endif %}
        data-ezs="search"
        data-ezs-autosearch
-       data-ezs-collection-handle="suspensions"
+       data-ezs-collection-handle="all"
        {% if template.name == 'collection' %}data-collection-template="{{ collection.handle }}"{% endif %}
        data-current-template="{{ template.name }}"
+       data-ezs-cache-seconds="Infinity"
+       data-ezs-reset-next-selects-on-change
   >
 
   <h6 class="h4 EZS_Widget-title">Search By Motorcycle</h6>

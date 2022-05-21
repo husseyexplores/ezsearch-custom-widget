@@ -113,6 +113,7 @@ var __async = (__this, __arguments, generator) => {
       filter: "data-ezs-filter",
       csv_url: "data-ezs-csv-url",
       coll_handle: "data-ezs-collection-handle",
+      rest_next_selects_on_change: "data-ezs-reset-next-selects-on-change",
       auto_search: "data-ezs-autosearch",
       csv_headers: "data-ezs-has-csv-headers",
       filtered_link: "data-ezs-filtered-link",
@@ -268,6 +269,7 @@ var __async = (__this, __arguments, generator) => {
     fetchData,
     collectionHandle,
     onEvent,
+    resetNextSelectsOnChange = false,
     autoSearch = false,
     productTags = null,
     cacheSeconds = 300,
@@ -298,6 +300,7 @@ var __async = (__this, __arguments, generator) => {
     validated.collectionHandle = typeof collectionHandle === "string" ? collectionHandle : rootNode.getAttribute(ATTR.coll_handle) || "all";
     validated.onEvent = typeof onEvent === "function" ? onEvent : null;
     validated.autoSearch = !!autoSearch || rootNode.hasAttribute(ATTR.auto_search);
+    validated.resetNextSelectsOnChange = !!resetNextSelectsOnChange || rootNode.hasAttribute(ATTR.rest_next_selects_on_change);
     validated.hasCsvHeaders = !!hasCsvHeaders || rootNode.hasAttribute(ATTR.csv_headers);
     validated.isFitmentWidget = !!isFitmentWidget || rootNode.hasAttribute(ATTR.fitment_widget);
     validated.loadingBtnClass = (typeof loadingBtnClass == "string" ? loadingBtnClass : rootNode.getAttribute(ATTR.loading_btn_class) || "").split(" ").filter(Boolean);
@@ -369,7 +372,8 @@ var __async = (__this, __arguments, generator) => {
         hasCsvHeaders,
         triggerVerifyBtns,
         isFitmentWidget,
-        filterKeysSortBy
+        filterKeysSortBy,
+        resetNextSelectsOnChange
       } = validateOptions(options);
       if (rootNode.__ezs_hydrated) {
         log("Already hydrated");
@@ -418,7 +422,7 @@ var __async = (__this, __arguments, generator) => {
               remove(label);
             }
           }
-          let sameOptions = selectIndex === -1 || updateSelectValue ? false : !isNextSelect ? true : filterOptions.length === select.options.length - 1 && filterOptions.every((opt, i) => opt === select.options[i + 1].value);
+          let sameOptions = selectIndex === -1 || updateSelectValue ? false : !isNextSelect ? true : resetNextSelectsOnChange ? false : filterOptions.length === select.options.length - 1 && filterOptions.every((opt, i) => opt === select.options[i + 1].value);
           if (!sameOptions) {
             select.options.length = 1;
             requestAnimationFrame(() => {
@@ -507,6 +511,12 @@ var __async = (__this, __arguments, generator) => {
         let select = selects[index2];
         const v = select.value;
         v ? activeFilters.set(label, v) : activeFilters.set(label, "");
+        if (resetNextSelectsOnChange) {
+          [...activeFilters].forEach(([_label], idx) => {
+            if (idx > index2)
+              activeFilters.set(_label, "");
+          });
+        }
         updateOptions({ selectIndex: index2 });
       }
       function updateFilterValue(label, value) {

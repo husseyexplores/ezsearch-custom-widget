@@ -23,6 +23,7 @@ function validateOptions({
   fetchData,
   collectionHandle,
   onEvent,
+  resetNextSelectsOnChange = false,
   autoSearch = false,
   productTags = null,
   cacheSeconds = 300,
@@ -68,6 +69,9 @@ function validateOptions({
 
   validated.onEvent = typeof onEvent === 'function' ? onEvent : null
   validated.autoSearch = !!autoSearch || rootNode.hasAttribute(ATTR.auto_search)
+  validated.resetNextSelectsOnChange =
+    !!resetNextSelectsOnChange ||
+    rootNode.hasAttribute(ATTR.rest_next_selects_on_change)
   validated.hasCsvHeaders =
     !!hasCsvHeaders || rootNode.hasAttribute(ATTR.csv_headers)
   validated.isFitmentWidget =
@@ -100,6 +104,7 @@ function validateOptions({
     }
   )
 
+  // reset `selects` - (maybe Clear cache as well)
   validated.gotoPendingBtns = Array.from(
     rootNode.querySelectorAll(`[${ATTR.goto_pending}]`)
   ).map(btn => {
@@ -175,6 +180,7 @@ export async function hydrateEZSearch(options) {
     triggerVerifyBtns,
     isFitmentWidget,
     filterKeysSortBy,
+    resetNextSelectsOnChange,
   } = validateOptions(options)
 
   if (rootNode.__ezs_hydrated) {
@@ -220,6 +226,7 @@ export async function hydrateEZSearch(options) {
         index: idx,
         filterTree: filterTree,
       })
+
       // Reset the current filter value if next options does not contain the current value
       if (!filterObject?.[filterValue]) activeFilters.set(label, '')
 
@@ -245,6 +252,8 @@ export async function hydrateEZSearch(options) {
           ? false
           : !isNextSelect
           ? true
+          : resetNextSelectsOnChange
+          ? false
           : filterOptions.length === select.options.length - 1 &&
             filterOptions.every((opt, i) => opt === select.options[i + 1].value)
 
@@ -369,6 +378,12 @@ export async function hydrateEZSearch(options) {
 
     const v = select.value
     v ? activeFilters.set(label, v) : activeFilters.set(label, '')
+
+    if (resetNextSelectsOnChange) {
+      ;[...activeFilters].forEach(([_label], idx) => {
+        if (idx > index) activeFilters.set(_label, '')
+      })
+    }
 
     updateOptions({ selectIndex: index })
   }

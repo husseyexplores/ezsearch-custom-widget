@@ -148,6 +148,7 @@ export const CONSTS = {
     filter: 'data-ezs-filter',
     csv_url: 'data-ezs-csv-url',
     coll_handle: 'data-ezs-collection-handle',
+    rest_next_selects_on_change: 'data-ezs-reset-next-selects-on-change',
     auto_search: 'data-ezs-autosearch',
     csv_headers: 'data-ezs-has-csv-headers',
     filtered_link: 'data-ezs-filtered-link',
