@@ -102,6 +102,7 @@ export function getCurrentFilterObject({ selectedValues, index, filterTree }) {
   if (selectable) {
     const isTuple = Array.isArray(selectedValues[0])
     let res = selectedValues.slice(0, index).reduce((x, maybeTuple) => {
+      if (x == null) return null
       let value = isTuple ? maybeTuple[1] : maybeTuple
       return x[value]
     }, filterTree)

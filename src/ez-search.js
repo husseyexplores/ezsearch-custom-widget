@@ -278,9 +278,8 @@ export async function hydrateEZSearch(options) {
     forcePending = false,
     fromCache = false,
     preventAutosearch = false,
-    activeFiltersList,
   } = {}) {
-    let allSelected = (activeFiltersList || [...activeFilters]).every(
+    let allSelected = [...activeFilters].every(
       ([, filterValue]) => !!filterValue
     )
     rootNode.setAttribute(

@@ -217,6 +217,8 @@ var __async = (__this, __arguments, generator) => {
     if (selectable) {
       const isTuple = Array.isArray(selectedValues[0]);
       let res = selectedValues.slice(0, index2).reduce((x, maybeTuple) => {
+        if (x == null)
+          return null;
         let value = isTuple ? maybeTuple[1] : maybeTuple;
         return x[value];
       }, filterTree);
@@ -442,10 +444,9 @@ var __async = (__this, __arguments, generator) => {
       function afterOptionsUpdate({
         forcePending = false,
         fromCache = false,
-        preventAutosearch = false,
-        activeFiltersList
+        preventAutosearch = false
       } = {}) {
-        let allSelected = (activeFiltersList || [...activeFilters]).every(([, filterValue]) => !!filterValue);
+        let allSelected = [...activeFilters].every(([, filterValue]) => !!filterValue);
         rootNode.setAttribute("data-ezs-selected-filters", allSelected ? "all" : "partial");
         let selectedItem = forcePending ? null : fromCache ? safeJsonParse(get("selectedItem"), "null") : getSelectedItem({ keys: filterKeys, activeFilters, filterTree });
         let finalHref = selectedItem == null ? void 0 : selectedItem._path;
