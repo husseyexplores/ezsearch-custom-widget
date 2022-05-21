@@ -8,14 +8,16 @@ window.EZSearchDefaultInstances = []
 
 function initializeEZSearch() {
   const searchRoots = Array.from(
-    document.querySelectorAll('[data-ezs="search"]:not([data-ezs-auto-initialize="false"])'),
+    document.querySelectorAll(
+      '[data-ezs="search"]:not([data-ezs-auto-initialize="false"])'
+    )
   )
 
   searchRoots.forEach(rootNode => {
     document.dispatchEvent(
       new CustomEvent('EZSearch_Loading', {
         detail: rootNode,
-      }),
+      })
     )
 
     hydrateEZSearch({
@@ -32,7 +34,7 @@ function initializeEZSearch() {
       document.dispatchEvent(
         new CustomEvent('EZSearch_Loaded', {
           detail: rootNode,
-        }),
+        })
       )
     })
   })

@@ -44,7 +44,12 @@ export function iterateOverObjectTree(obj, fn, level = 0) {
   return obj
 }
 
-export function createFiltersTree({ data, keys = [], path = [], keysSort = [] }) {
+export function createFiltersTree({
+  data,
+  keys = [],
+  path = [],
+  keysSort = [],
+}) {
   let res = {}
 
   keys.forEach((k, keyIndex) => {
@@ -58,7 +63,7 @@ export function createFiltersTree({ data, keys = [], path = [], keysSort = [] })
 
       let value = obj[k]
       if (typeof value == 'number') value = value.toString()
-      if (typeof value !== 'string') return
+      if (typeof value !== 'string' || value === '') return
 
       let resInnerObj = keys.slice(0, keyIndex).reduce((x, k) => x[obj[k]], res)
       if (!resInnerObj) return
@@ -72,7 +77,9 @@ export function createFiltersTree({ data, keys = [], path = [], keysSort = [] })
         if (!obj._tag) {
           const desc = keysSort[levelIndex]?.desc
 
-          obj._keys_ = keys.sort((a, b) => (desc ? b.localeCompare(a) : a.localeCompare(b)))
+          obj._keys_ = keys.sort((a, b) =>
+            desc ? b.localeCompare(a) : a.localeCompare(b)
+          )
         }
       })
     : res
@@ -83,7 +90,9 @@ export function isFilterSelectable(selectedValues, index) {
 
   let slice = selectedValues.slice(0, index)
   const isTuple = Array.isArray(selectedValues[0])
-  return isTuple ? slice.every(([key, value]) => !!value) : slice.every(v => !!v)
+  return isTuple
+    ? slice.every(([key, value]) => !!value)
+    : slice.every(v => !!v)
 }
 
 export function getCurrentFilterObject({ selectedValues, index, filterTree }) {

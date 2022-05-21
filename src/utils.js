@@ -7,9 +7,12 @@ let LOG_PREFIX = '[EZSearch] :: '
 export function log(...x) {
   return IS_PROD ? console.log(LOG_PREFIX, ...x) : console.log(x)
 }
-log.warn = (...x) => (IS_PROD ? console.warn(LOG_PREFIX, ...x) : console.warn(...x))
-log.info = (...x) => (IS_PROD ? console.info(LOG_PREFIX, ...x) : console.info(...x))
-log.error = (...x) => (IS_PROD ? console.error(LOG_PREFIX, ...x) : console.error(...x))
+log.warn = (...x) =>
+  IS_PROD ? console.warn(LOG_PREFIX, ...x) : console.warn(...x)
+log.info = (...x) =>
+  IS_PROD ? console.info(LOG_PREFIX, ...x) : console.info(...x)
+log.error = (...x) =>
+  IS_PROD ? console.error(LOG_PREFIX, ...x) : console.error(...x)
 
 /* prettier-ignore */
 function parseCSV(str) {
@@ -113,7 +116,9 @@ export function safeJsonParse(text, fallbackText = 'null') {
   try {
     return JSON.parse(text || fallbackText)
   } catch (error) {
-    return typeof fallbackText === 'string' ? JSON.parse(fallbackText) : fallbackText
+    return typeof fallbackText === 'string'
+      ? JSON.parse(fallbackText)
+      : fallbackText
   }
 }
 
@@ -186,8 +191,15 @@ export const domReady = () =>
     else document.addEventListener('DOMContentLoaded', () => fulfil())
   })
 
-export function on(element, eventName, handler, listenerOptions, runImmediately = false) {
-  if (listenerOptions != null) element.addEventListener(eventName, handler, listenerOptions)
+export function on(
+  element,
+  eventName,
+  handler,
+  listenerOptions,
+  runImmediately = false
+) {
+  if (listenerOptions != null)
+    element.addEventListener(eventName, handler, listenerOptions)
   else element.addEventListener(eventName, handler)
 
   if (runImmediately) {

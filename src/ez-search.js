@@ -8,7 +8,11 @@ import {
   log,
   CONSTS,
 } from './utils'
-import { createFiltersTree, getCurrentFilterObject, getSelectedItem } from './filter'
+import {
+  createFiltersTree,
+  getCurrentFilterObject,
+  getSelectedItem,
+} from './filter'
 import * as ls from './local-storage'
 
 const { ATTR } = CONSTS
@@ -28,15 +32,16 @@ function validateOptions({
 } = {}) {
   let validated = {}
 
-  if (!(rootNode instanceof HTMLElement)) throw new Error('rootNode must be specified')
+  if (!(rootNode instanceof HTMLElement))
+    throw new Error('rootNode must be specified')
   validated.rootNode = rootNode
   let uid = rootNode.getAttribute(ATTR.id) || ''
-  validated.filterSelects = Array.from(rootNode.querySelectorAll(`select[${ATTR.filter}]`)).map(
-    sel => {
-      sel.setAttribute(ATTR.filter, (sel.getAttribute(ATTR.filter) || '') + uid)
-      return sel
-    },
-  )
+  validated.filterSelects = Array.from(
+    rootNode.querySelectorAll(`select[${ATTR.filter}]`)
+  ).map(sel => {
+    sel.setAttribute(ATTR.filter, (sel.getAttribute(ATTR.filter) || '') + uid)
+    return sel
+  })
   validated.filterKeys = validated.filterSelects
     .map(sel => sel.getAttribute(ATTR.filter))
     .filter(Boolean)
@@ -53,7 +58,8 @@ function validateOptions({
   })
 
   let url = rootNode.getAttribute(ATTR.csv_url)
-  if (typeof url !== 'string' && !fetchData) throw new Error('URL or `fetchData` must be specified')
+  if (typeof url !== 'string' && !fetchData)
+    throw new Error('URL or `fetchData` must be specified')
 
   validated.collectionHandle =
     typeof collectionHandle === 'string'
@@ -62,8 +68,10 @@ function validateOptions({
 
   validated.onEvent = typeof onEvent === 'function' ? onEvent : null
   validated.autoSearch = !!autoSearch || rootNode.hasAttribute(ATTR.auto_search)
-  validated.hasCsvHeaders = !!hasCsvHeaders || rootNode.hasAttribute(ATTR.csv_headers)
-  validated.isFitmentWidget = !!isFitmentWidget || rootNode.hasAttribute(ATTR.fitment_widget)
+  validated.hasCsvHeaders =
+    !!hasCsvHeaders || rootNode.hasAttribute(ATTR.csv_headers)
+  validated.isFitmentWidget =
+    !!isFitmentWidget || rootNode.hasAttribute(ATTR.fitment_widget)
   validated.loadingBtnClass = (
     typeof loadingBtnClass == 'string'
       ? loadingBtnClass
@@ -73,28 +81,36 @@ function validateOptions({
     .filter(Boolean)
   if (validated.loadingBtnClass.length === 0) validated.loadingBtnClass = null
 
-  validated.filteredLinks = Array.from(rootNode.querySelectorAll(`a[${ATTR.filtered_link}]`))
-  validated.filteredTitle = Array.from(rootNode.querySelectorAll(`[${ATTR.filtered_title}]`))
-  validated.triggerVerifyBtns = Array.from(
-    rootNode.querySelectorAll(`[${ATTR.filter_trigger_verify}]`),
+  validated.filteredLinks = Array.from(
+    rootNode.querySelectorAll(`a[${ATTR.filtered_link}]`)
   )
-  validated.toggleOpenBtns = Array.from(rootNode.querySelectorAll(`[${ATTR.toggle_open}]`))
+  validated.filteredTitle = Array.from(
+    rootNode.querySelectorAll(`[${ATTR.filtered_title}]`)
+  )
+  validated.triggerVerifyBtns = Array.from(
+    rootNode.querySelectorAll(`[${ATTR.filter_trigger_verify}]`)
+  )
+  validated.toggleOpenBtns = Array.from(
+    rootNode.querySelectorAll(`[${ATTR.toggle_open}]`)
+  )
 
-  Array.from(rootNode.querySelectorAll(`[${ATTR.loading_on_click}]`)).forEach(el => {
-    el.__ezs_loadable = true
+  Array.from(rootNode.querySelectorAll(`[${ATTR.loading_on_click}]`)).forEach(
+    el => {
+      el.__ezs_loadable = true
+    }
+  )
+
+  validated.gotoPendingBtns = Array.from(
+    rootNode.querySelectorAll(`[${ATTR.goto_pending}]`)
+  ).map(btn => {
+    let clearCache = btn.hasAttribute(ATTR.clear_cache)
+    if (clearCache) btn.__ezs_clear_cache = true
+
+    return btn
   })
 
-  validated.gotoPendingBtns = Array.from(rootNode.querySelectorAll(`[${ATTR.goto_pending}]`)).map(
-    btn => {
-      let clearCache = btn.hasAttribute(ATTR.clear_cache)
-      if (clearCache) btn.__ezs_clear_cache = true
-
-      return btn
-    },
-  )
-
   validated.gotoBaseCollectionBtns = Array.from(
-    rootNode.querySelectorAll(`[${ATTR.goto_base_collection}]`),
+    rootNode.querySelectorAll(`[${ATTR.goto_base_collection}]`)
   ).map(btn => {
     let clearCache = btn.hasAttribute(ATTR.clear_cache)
     if (clearCache) btn.__ezs_clear_cache = true
@@ -187,12 +203,16 @@ export async function hydrateEZSearch(options) {
     Array.from({ length: filterKeys.length }, (_, i) => [
       filterKeys[i],
       !canCache || preClearCache ? '' : ls.get(filterKeys[i]) || '',
-    ]),
+    ])
   )
 
   let filterTree = null // {}
 
-  function updateOptions({ selectIndex, updateSelectValue = false, forcePending = false } = {}) {
+  function updateOptions({
+    selectIndex,
+    updateSelectValue = false,
+    forcePending = false,
+  } = {}) {
     let activeFiltersList = [...activeFilters]
     activeFiltersList.forEach(([label, filterValue], idx) => {
       const filterObject = getCurrentFilterObject({
@@ -208,7 +228,8 @@ export async function hydrateEZSearch(options) {
       const select = selects[idx]
 
       const filterOptions = filterObject?._keys_ || []
-      const hasFilterOptions = Array.isArray(filterOptions) && filterOptions.length > 0
+      const hasFilterOptions =
+        Array.isArray(filterOptions) && filterOptions.length > 0
       select.disabled = !hasFilterOptions
 
       if (canCache) {
@@ -241,9 +262,16 @@ export async function hydrateEZSearch(options) {
     })
 
     if (autoSearch || forcePending || selectIndex === -1) {
-      afterOptionsUpdate({ forcePending, preventAutosearch: selectIndex === -1, activeFiltersList })
+      afterOptionsUpdate({
+        forcePending,
+        preventAutosearch: selectIndex === -1,
+        activeFiltersList,
+      })
     }
-    onEvent?.('SELECTION_UPDATE', { index: selectIndex, select: selects[selectIndex] })
+    onEvent?.('SELECTION_UPDATE', {
+      index: selectIndex,
+      select: selects[selectIndex],
+    })
   }
 
   function afterOptionsUpdate({
@@ -253,9 +281,12 @@ export async function hydrateEZSearch(options) {
     activeFiltersList,
   } = {}) {
     let allSelected = (activeFiltersList || [...activeFilters]).every(
-      ([, filterValue]) => !!filterValue,
+      ([, filterValue]) => !!filterValue
     )
-    rootNode.setAttribute('data-ezs-selected-filters', allSelected ? 'all' : 'partial')
+    rootNode.setAttribute(
+      'data-ezs-selected-filters',
+      allSelected ? 'all' : 'partial'
+    )
 
     // Check if there is any valid selection
     let selectedItem = forcePending
@@ -271,7 +302,7 @@ export async function hydrateEZSearch(options) {
 
       rootNode.setAttribute(
         'data-ezs-state',
-        !selectedItem ? 'pending' : hasTag ? 'valid' : 'invalid',
+        !selectedItem ? 'pending' : hasTag ? 'valid' : 'invalid'
       )
     }
 
@@ -295,7 +326,7 @@ export async function hydrateEZSearch(options) {
           },
           bubbles: false,
           cancelable: false,
-        }),
+        })
       )
     }
 
@@ -316,7 +347,9 @@ export async function hydrateEZSearch(options) {
       el.textContent = selectedItemTitle
     })
 
-    selectedItem ? ls.set('selectedItem', JSON.stringify(selectedItem)) : ls.remove('selectedItem')
+    selectedItem
+      ? ls.set('selectedItem', JSON.stringify(selectedItem))
+      : ls.remove('selectedItem')
 
     let canSubmit = finalHref && filterForm && autoSearch && !preventAutosearch
     if (canSubmit) {
@@ -353,7 +386,11 @@ export async function hydrateEZSearch(options) {
 
     activeFilters.set(label, value)
 
-    updateOptions({ selectIndex: filterIndex, updateSelectValue: true, forcePending: true })
+    updateOptions({
+      selectIndex: filterIndex,
+      updateSelectValue: true,
+      forcePending: true,
+    })
   }
 
   function clearAllCache() {
@@ -443,7 +480,7 @@ export async function hydrateEZSearch(options) {
             target.classList.add(clx)
           })
         }
-      }),
+      })
     )
 
     updateOptions({ selectIndex: -1 })
@@ -483,7 +520,9 @@ export async function hydrateEZSearch(options) {
           if (label) {
             acc[label] = v
           } else {
-            acc._path = baseColHandle ? v.replace('/all/', `/${baseColHandle}/`) : v
+            acc._path = baseColHandle
+              ? v.replace('/all/', `/${baseColHandle}/`)
+              : v
             acc._tag = last(v.split('/'))
           }
 
