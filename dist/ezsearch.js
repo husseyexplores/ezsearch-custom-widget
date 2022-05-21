@@ -678,6 +678,7 @@ var __async = (__this, __arguments, generator) => {
           },
           updateFilterValue,
           clearAllCache,
+          prodcutTagsLookup,
           destory() {
             selects.forEach((select) => {
               select.options.length = 1;

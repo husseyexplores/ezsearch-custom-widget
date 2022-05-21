@@ -593,6 +593,7 @@ export async function hydrateEZSearch(options) {
       },
       updateFilterValue,
       clearAllCache,
+      prodcutTagsLookup,
       destory() {
         selects.forEach(select => {
           select.options.length = 1
