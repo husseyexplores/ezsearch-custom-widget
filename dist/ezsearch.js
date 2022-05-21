@@ -169,7 +169,12 @@ var __async = (__this, __arguments, generator) => {
     }
     return obj;
   }
-  function createFiltersTree({ data, keys = [], path = [], keysSort = [] }) {
+  function createFiltersTree({
+    data,
+    keys = [],
+    path = [],
+    keysSort = []
+  }) {
     let res = {};
     keys.forEach((k, keyIndex) => {
       let isLastKeyIndex = keyIndex === keys.length - 1;
@@ -182,7 +187,7 @@ var __async = (__this, __arguments, generator) => {
         let value = obj[k];
         if (typeof value == "number")
           value = value.toString();
-        if (typeof value !== "string")
+        if (typeof value !== "string" || value === "")
           return;
         let resInnerObj = keys.slice(0, keyIndex).reduce((x, k2) => x[obj[k2]], res);
         if (!resInnerObj)
@@ -385,7 +390,11 @@ var __async = (__this, __arguments, generator) => {
         !canCache || preClearCache ? "" : get(filterKeys[i]) || ""
       ]));
       let filterTree = null;
-      function updateOptions({ selectIndex, updateSelectValue = false, forcePending = false } = {}) {
+      function updateOptions({
+        selectIndex,
+        updateSelectValue = false,
+        forcePending = false
+      } = {}) {
         let activeFiltersList = [...activeFilters];
         activeFiltersList.forEach(([label, filterValue], idx) => {
           const filterObject = getCurrentFilterObject({
@@ -419,9 +428,16 @@ var __async = (__this, __arguments, generator) => {
           }
         });
         if (autoSearch || forcePending || selectIndex === -1) {
-          afterOptionsUpdate({ forcePending, preventAutosearch: selectIndex === -1, activeFiltersList });
+          afterOptionsUpdate({
+            forcePending,
+            preventAutosearch: selectIndex === -1,
+            activeFiltersList
+          });
         }
-        onEvent == null ? void 0 : onEvent("SELECTION_UPDATE", { index: selectIndex, select: selects[selectIndex] });
+        onEvent == null ? void 0 : onEvent("SELECTION_UPDATE", {
+          index: selectIndex,
+          select: selects[selectIndex]
+        });
       }
       function afterOptionsUpdate({
         forcePending = false,
@@ -504,7 +520,11 @@ var __async = (__this, __arguments, generator) => {
         if (filterIndex == null)
           return;
         activeFilters.set(label, value);
-        updateOptions({ selectIndex: filterIndex, updateSelectValue: true, forcePending: true });
+        updateOptions({
+          selectIndex: filterIndex,
+          updateSelectValue: true,
+          forcePending: true
+        });
       }
       function clearAllCache() {
         remove("selectedItem");
