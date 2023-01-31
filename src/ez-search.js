@@ -18,7 +18,7 @@ import * as ls from './local-storage'
 const { ATTR } = CONSTS
 let _FILTER_TREE_CACHE = {}
 
-function validateOptions({
+export function validateOptions({
   rootNode,
   fetchData,
   collectionHandle,

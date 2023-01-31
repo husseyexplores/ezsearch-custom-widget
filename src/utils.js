@@ -53,10 +53,16 @@ function parseCSV(str) {
 
 export async function fetchCsv(url, fetcherFn) {
   if (typeof fetcherFn === 'function') {
-    return fetcherFn({ parseCSV })
+    return fetcherFn(url).then(csvText => {
+      if (typeof csvText === 'string') {
+        return parseCSV(csvText)
+      }
+
+      return csvText
+    })
   }
 
-  let res = await fetch(url)
+  let res = await fetch(url.replace(/\\\//g, '/'))
   if (!res.ok) {
     log('Unable to fetch CSV')
     return null

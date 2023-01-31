@@ -74,9 +74,14 @@ var __async = (__this, __arguments, generator) => {
   function fetchCsv(url, fetcherFn) {
     return __async(this, null, function* () {
       if (typeof fetcherFn === "function") {
-        return fetcherFn({ parseCSV });
+        return fetcherFn(url).then((csvText2) => {
+          if (typeof csvText2 === "string") {
+            return parseCSV(csvText2);
+          }
+          return csvText2;
+        });
       }
-      let res = yield fetch(url);
+      let res = yield fetch(url.replace(/\\\//g, "/"));
       if (!res.ok) {
         log("Unable to fetch CSV");
         return null;
@@ -127,6 +132,7 @@ var __async = (__this, __arguments, generator) => {
       prod_tags: "data-ezs-product-tags",
       fitment_widget: "data-ezs-fitment",
       sort_by: "data-ezs-sort",
+      // "desc"
       toggle_open: "data-ezs-toggle-open",
       loading_on_click: "data-ezs-load-on-click",
       loading_btn_class: "data-ezs-loading-class"
@@ -200,7 +206,9 @@ var __async = (__this, __arguments, generator) => {
       var _a;
       if (!obj._tag) {
         const desc = (_a = keysSort[levelIndex]) == null ? void 0 : _a.desc;
-        obj._keys_ = keys2.sort((a, b) => desc ? b.localeCompare(a) : a.localeCompare(b));
+        obj._keys_ = keys2.sort(
+          (a, b) => desc ? b.localeCompare(a) : a.localeCompare(b)
+        );
       }
     }) : res;
   }
@@ -282,7 +290,9 @@ var __async = (__this, __arguments, generator) => {
       throw new Error("rootNode must be specified");
     validated.rootNode = rootNode;
     let uid = rootNode.getAttribute(ATTR.id) || "";
-    validated.filterSelects = Array.from(rootNode.querySelectorAll(`select[${ATTR.filter}]`)).map((sel) => {
+    validated.filterSelects = Array.from(
+      rootNode.querySelectorAll(`select[${ATTR.filter}]`)
+    ).map((sel) => {
       sel.setAttribute(ATTR.filter, (sel.getAttribute(ATTR.filter) || "") + uid);
       return sel;
     });
@@ -306,20 +316,34 @@ var __async = (__this, __arguments, generator) => {
     validated.loadingBtnClass = (typeof loadingBtnClass == "string" ? loadingBtnClass : rootNode.getAttribute(ATTR.loading_btn_class) || "").split(" ").filter(Boolean);
     if (validated.loadingBtnClass.length === 0)
       validated.loadingBtnClass = null;
-    validated.filteredLinks = Array.from(rootNode.querySelectorAll(`a[${ATTR.filtered_link}]`));
-    validated.filteredTitle = Array.from(rootNode.querySelectorAll(`[${ATTR.filtered_title}]`));
-    validated.triggerVerifyBtns = Array.from(rootNode.querySelectorAll(`[${ATTR.filter_trigger_verify}]`));
-    validated.toggleOpenBtns = Array.from(rootNode.querySelectorAll(`[${ATTR.toggle_open}]`));
-    Array.from(rootNode.querySelectorAll(`[${ATTR.loading_on_click}]`)).forEach((el) => {
-      el.__ezs_loadable = true;
-    });
-    validated.gotoPendingBtns = Array.from(rootNode.querySelectorAll(`[${ATTR.goto_pending}]`)).map((btn) => {
+    validated.filteredLinks = Array.from(
+      rootNode.querySelectorAll(`a[${ATTR.filtered_link}]`)
+    );
+    validated.filteredTitle = Array.from(
+      rootNode.querySelectorAll(`[${ATTR.filtered_title}]`)
+    );
+    validated.triggerVerifyBtns = Array.from(
+      rootNode.querySelectorAll(`[${ATTR.filter_trigger_verify}]`)
+    );
+    validated.toggleOpenBtns = Array.from(
+      rootNode.querySelectorAll(`[${ATTR.toggle_open}]`)
+    );
+    Array.from(rootNode.querySelectorAll(`[${ATTR.loading_on_click}]`)).forEach(
+      (el) => {
+        el.__ezs_loadable = true;
+      }
+    );
+    validated.gotoPendingBtns = Array.from(
+      rootNode.querySelectorAll(`[${ATTR.goto_pending}]`)
+    ).map((btn) => {
       let clearCache = btn.hasAttribute(ATTR.clear_cache);
       if (clearCache)
         btn.__ezs_clear_cache = true;
       return btn;
     });
-    validated.gotoBaseCollectionBtns = Array.from(rootNode.querySelectorAll(`[${ATTR.goto_base_collection}]`)).map((btn) => {
+    validated.gotoBaseCollectionBtns = Array.from(
+      rootNode.querySelectorAll(`[${ATTR.goto_base_collection}]`)
+    ).map((btn) => {
       let clearCache = btn.hasAttribute(ATTR.clear_cache);
       if (clearCache)
         btn.__ezs_clear_cache = true;
@@ -391,10 +415,12 @@ var __async = (__this, __arguments, generator) => {
         lookup[tag] = true;
         return lookup;
       }, {}) : null;
-      const activeFilters = new Map(Array.from({ length: filterKeys.length }, (_, i) => [
-        filterKeys[i],
-        !canCache || preClearCache ? "" : get(filterKeys[i]) || ""
-      ]));
+      const activeFilters = new Map(
+        Array.from({ length: filterKeys.length }, (_, i) => [
+          filterKeys[i],
+          !canCache || preClearCache ? "" : get(filterKeys[i]) || ""
+        ])
+      );
       let filterTree = null;
       function updateOptions({
         selectIndex,
@@ -450,14 +476,22 @@ var __async = (__this, __arguments, generator) => {
         fromCache = false,
         preventAutosearch = false
       } = {}) {
-        let allSelected = [...activeFilters].every(([, filterValue]) => !!filterValue);
-        rootNode.setAttribute("data-ezs-selected-filters", allSelected ? "all" : "partial");
+        let allSelected = [...activeFilters].every(
+          ([, filterValue]) => !!filterValue
+        );
+        rootNode.setAttribute(
+          "data-ezs-selected-filters",
+          allSelected ? "all" : "partial"
+        );
         let selectedItem = forcePending ? null : fromCache ? safeJsonParse(get("selectedItem"), "null") : getSelectedItem({ keys: filterKeys, activeFilters, filterTree });
         let finalHref = selectedItem == null ? void 0 : selectedItem._path;
         if (prodcutTagsLookup) {
           let tag = selectedItem == null ? void 0 : selectedItem._tag;
           let hasTag = prodcutTagsLookup[tag];
-          rootNode.setAttribute("data-ezs-state", !selectedItem ? "pending" : hasTag ? "valid" : "invalid");
+          rootNode.setAttribute(
+            "data-ezs-state",
+            !selectedItem ? "pending" : hasTag ? "valid" : "invalid"
+          );
         }
         if (filterForm) {
           if (finalHref) {
@@ -472,13 +506,15 @@ var __async = (__this, __arguments, generator) => {
         }
         if (selectedItem) {
           onEvent == null ? void 0 : onEvent("SELECTION_COMPLETE", { selected: selectedItem });
-          rootNode.dispatchEvent(new CustomEvent("EZSearch_Selected", {
-            detail: {
-              selected: selectedItem
-            },
-            bubbles: false,
-            cancelable: false
-          }));
+          rootNode.dispatchEvent(
+            new CustomEvent("EZSearch_Selected", {
+              detail: {
+                selected: selectedItem
+              },
+              bubbles: false,
+              cancelable: false
+            })
+          );
         }
         filteredLinks.forEach((anchor) => {
           if (finalHref) {
@@ -558,52 +594,58 @@ var __async = (__this, __arguments, generator) => {
           select.options.length = 1;
           select.options[0] = firstOptions[idx];
         });
-        onDestroyListeners.push(...triggerVerifyBtns.map((btn) => {
-          if (btn.disabled)
-            btn.disabled = false;
-          return on(btn, "click", () => {
-            afterOptionsUpdate();
-          });
-        }), ...gotoPendingBtns.map((btn) => {
-          if (btn.disabled)
-            btn.disabled = false;
-          return on(btn, "click", () => {
-            let clearCache = btn.__ezs_clear_cache;
-            if (clearCache) {
-              clearAllCache();
-              updateFilterValue(filterKeys[0], "");
-            }
-            afterOptionsUpdate({ forcePending: true });
-            selects2[0].focus();
-          });
-        }), ...gotoBaseCollectionBtns.map((btn) => {
-          if (btn.disabled)
-            btn.disabled = false;
-          return on(btn, "click", () => {
-            btn.disabled = true;
-            let clearCache = btn.__ezs_clear_cache;
-            if (clearCache) {
-              clearAllCache();
-            }
-            if (filterForm) {
-              filterForm.action = baseColPath;
-              filterForm.submit();
-            } else {
-              window.location.href = baseColPath;
-            }
-          });
-        }), ...toggleOpenBtns.map((btn) => {
-          return on(btn, "click", () => {
-            rootNode.classList.toggle("is-open");
-          });
-        }), on(rootNode, "click", (e) => {
-          let target = e == null ? void 0 : e.target;
-          if (target && target.__ezs_loadable) {
-            loadingBtnClass == null ? void 0 : loadingBtnClass.forEach((clx) => {
-              target.classList.add(clx);
+        onDestroyListeners.push(
+          ...triggerVerifyBtns.map((btn) => {
+            if (btn.disabled)
+              btn.disabled = false;
+            return on(btn, "click", () => {
+              afterOptionsUpdate();
             });
-          }
-        }));
+          }),
+          ...gotoPendingBtns.map((btn) => {
+            if (btn.disabled)
+              btn.disabled = false;
+            return on(btn, "click", () => {
+              let clearCache = btn.__ezs_clear_cache;
+              if (clearCache) {
+                clearAllCache();
+                updateFilterValue(filterKeys[0], "");
+              }
+              afterOptionsUpdate({ forcePending: true });
+              selects2[0].focus();
+            });
+          }),
+          ...gotoBaseCollectionBtns.map((btn) => {
+            if (btn.disabled)
+              btn.disabled = false;
+            return on(btn, "click", () => {
+              btn.disabled = true;
+              let clearCache = btn.__ezs_clear_cache;
+              if (clearCache) {
+                clearAllCache();
+              }
+              if (filterForm) {
+                filterForm.action = baseColPath;
+                filterForm.submit();
+              } else {
+                window.location.href = baseColPath;
+              }
+            });
+          }),
+          ...toggleOpenBtns.map((btn) => {
+            return on(btn, "click", () => {
+              rootNode.classList.toggle("is-open");
+            });
+          }),
+          on(rootNode, "click", (e) => {
+            let target = e == null ? void 0 : e.target;
+            if (target && target.__ezs_loadable) {
+              loadingBtnClass == null ? void 0 : loadingBtnClass.forEach((clx) => {
+                target.classList.add(clx);
+              });
+            }
+          })
+        );
         updateOptions({ selectIndex: -1 });
       }
       function prepareFilterTree() {
@@ -700,27 +742,35 @@ var __async = (__this, __arguments, generator) => {
       });
     });
   }
-  var styles = "";
+  const styles = "";
   window.EZSearchDefaultInstances = [];
   function initializeEZSearch() {
-    const searchRoots = Array.from(document.querySelectorAll('[data-ezs="search"]:not([data-ezs-auto-initialize="false"])'));
+    const searchRoots = Array.from(
+      document.querySelectorAll(
+        '[data-ezs="search"]:not([data-ezs-auto-initialize="false"])'
+      )
+    );
     searchRoots.forEach((rootNode) => {
-      document.dispatchEvent(new CustomEvent("EZSearch_Loading", {
-        detail: rootNode
-      }));
+      document.dispatchEvent(
+        new CustomEvent("EZSearch_Loading", {
+          detail: rootNode
+        })
+      );
       hydrateEZSearch({
         rootNode,
         onEvent: null
       }).then((instance) => {
         window.EZSearchDefaultInstances.push(instance);
-        document.dispatchEvent(new CustomEvent("EZSearch_Loaded", {
-          detail: rootNode
-        }));
+        document.dispatchEvent(
+          new CustomEvent("EZSearch_Loaded", {
+            detail: rootNode
+          })
+        );
       });
     });
   }
   domReady().then(initializeEZSearch);
-  var index = {
+  const index = {
     hydrate: hydrateEZSearch
   };
   return index;
