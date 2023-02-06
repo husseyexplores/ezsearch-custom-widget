@@ -534,10 +534,11 @@ export async function hydrateEZSearch(options) {
           if (label) {
             acc[label] = v
           } else {
+            const cleanUrl = v.split('$$$url')[0]
             acc._path = baseColHandle
-              ? v.replace('/all/', `/${baseColHandle}/`)
-              : v
-            acc._tag = last(v.split('/'))
+              ? cleanUrl.replace('/all/', `/${baseColHandle}/`)
+              : cleanUrl
+            acc._tag = last(cleanUrl.split('/'))
           }
 
           return acc
