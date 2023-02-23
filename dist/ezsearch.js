@@ -680,7 +680,10 @@ var __async = (__this, __arguments, generator) => {
                 if (label) {
                   acc[label] = v;
                 } else {
-                  const cleanUrl = v.split("$$$url")[0];
+                  let cleanUrl = v.split("$$$url")[0];
+                  if (typeof cleanUrl === "string") {
+                    cleanUrl = cleanUrl.replace("/collection/", "/collections/");
+                  }
                   acc._path = baseColHandle ? cleanUrl.replace("/all/", `/${baseColHandle}/`) : cleanUrl;
                   acc._tag = last(cleanUrl.split("/"));
                 }

@@ -538,7 +538,10 @@ export async function hydrateEZSearch(options) {
           if (label) {
             acc[label] = v
           } else {
-            const cleanUrl = v.split('$$$url')[0]
+            let cleanUrl = v.split('$$$url')[0]
+            if (typeof cleanUrl === 'string') {
+              cleanUrl = cleanUrl.replace('/collection/', '/collections/')
+            }
             acc._path = baseColHandle
               ? cleanUrl.replace('/all/', `/${baseColHandle}/`)
               : cleanUrl
