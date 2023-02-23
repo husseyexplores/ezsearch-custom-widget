@@ -304,15 +304,13 @@ export async function hydrateEZSearch(options) {
       : getSelectedItem({ keys: filterKeys, activeFilters, filterTree })
     let finalHref = selectedItem?._path
 
-    if (prodcutTagsLookup) {
-      let tag = selectedItem?._tag
-      let hasTag = prodcutTagsLookup[tag]
+    let tag = selectedItem?._tag
+    let hasTag = prodcutTagsLookup ? prodcutTagsLookup[tag] : null
 
-      rootNode.setAttribute(
-        'data-ezs-state',
-        !selectedItem ? 'pending' : hasTag ? 'valid' : 'invalid'
-      )
-    }
+    rootNode.setAttribute(
+      'data-ezs-state',
+      !selectedItem ? 'pending' : hasTag ? 'valid' : 'invalid'
+    )
 
     if (filterForm) {
       if (finalHref) {
@@ -506,6 +504,12 @@ export async function hydrateEZSearch(options) {
       return cachedPromiseTree
     }
 
+    if (!url) {
+      log.error('no `url` found')
+      rootNode.classList.add('is-invalid')
+      rootNode.style.display = 'none'
+      return
+    }
     let fetchPromise = fetchCsv(url, fetchData).then(listOfArrays => {
       if (listOfArrays.length === 0) return listOfArrays
 

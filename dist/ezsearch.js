@@ -485,14 +485,12 @@ var __async = (__this, __arguments, generator) => {
         );
         let selectedItem = forcePending ? null : fromCache ? safeJsonParse(get("selectedItem"), "null") : getSelectedItem({ keys: filterKeys, activeFilters, filterTree });
         let finalHref = selectedItem == null ? void 0 : selectedItem._path;
-        if (prodcutTagsLookup) {
-          let tag = selectedItem == null ? void 0 : selectedItem._tag;
-          let hasTag = prodcutTagsLookup[tag];
-          rootNode.setAttribute(
-            "data-ezs-state",
-            !selectedItem ? "pending" : hasTag ? "valid" : "invalid"
-          );
-        }
+        let tag = selectedItem == null ? void 0 : selectedItem._tag;
+        let hasTag = prodcutTagsLookup ? prodcutTagsLookup[tag] : null;
+        rootNode.setAttribute(
+          "data-ezs-state",
+          !selectedItem ? "pending" : hasTag ? "valid" : "invalid"
+        );
         if (filterForm) {
           if (finalHref) {
             filterForm.action = finalHref;
@@ -653,6 +651,12 @@ var __async = (__this, __arguments, generator) => {
           let cachedPromiseTree = _FILTER_TREE_CACHE[url];
           if (cachedPromiseTree) {
             return cachedPromiseTree;
+          }
+          if (!url) {
+            log.error("no `url` found");
+            rootNode.classList.add("is-invalid");
+            rootNode.style.display = "none";
+            return;
           }
           let fetchPromise = fetchCsv(url, fetchData).then((listOfArrays) => {
             if (listOfArrays.length === 0)
