@@ -520,39 +520,45 @@ export async function hydrateEZSearch(options) {
       let allValid = true
       let filterKeysCount = filterKeys.length
 
-      let parsed = listOfArrays.map(list => {
-        if (allValid && list.length - 1 !== filterKeysCount) {
-          log.error('CSV data and `filterKeys` mismatch', {
-            filterKeys,
-            line: list,
-          })
+      let parsed = listOfArrays
+        .map(line => {
+          if (allValid && line.length - 1 !== filterKeysCount) {
+            log.error('CSV data and `filterKeys` mismatch', {
+              filterKeys,
+              line: line,
+            })
 
-          allValid = false
-        }
-
-        if (!allValid) return []
-
-        let item = list.reduce((acc, v, idx) => {
-          let label = filterKeys[idx]
-
-          if (label) {
-            acc[label] = v
-          } else {
-            let cleanUrl = v.split('$$$url')[0]
-            if (typeof cleanUrl === 'string') {
-              cleanUrl = cleanUrl.replace('/collection/', '/collections/')
-            }
-            acc._path = baseColHandle
-              ? cleanUrl.replace('/all/', `/${baseColHandle}/`)
-              : cleanUrl
-            acc._tag = last(cleanUrl.split('/'))
+            allValid = false
           }
 
-          return acc
-        }, {})
+          if (!allValid) return []
 
-        return item
-      })
+          // last item is the value
+          const value = line[filterKeys.length]
+          const unsupported = value.includes('$$$products$$$')
+          if (unsupported) return []
+
+          let item = line.reduce((acc, v, idx) => {
+            let label = filterKeys[idx]
+
+            if (label) {
+              acc[label] = v
+            } else {
+              let cleanUrl = v.split('$$')[0]
+              if (typeof cleanUrl === 'string') {
+                cleanUrl = cleanUrl.replace('/collection/', '/collections/')
+              }
+              acc._path = baseColHandle
+                ? cleanUrl.replace('/all/', `/${baseColHandle}/`)
+                : cleanUrl
+              acc._tag = last(cleanUrl.split('/'))
+            }
+
+            return acc
+          }, {})
+
+          return item
+        })
 
       if (!allValid) {
         throw new Error('CSV data and `filterKeys` mismatch')
