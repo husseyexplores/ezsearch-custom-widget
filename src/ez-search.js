@@ -8,11 +8,7 @@ import {
   log,
   CONSTS,
 } from './utils'
-import {
-  createFiltersTree,
-  getCurrentFilterObject,
-  getSelectedItem,
-} from './filter'
+import { createFiltersTree, getCurrentFilterObject, getSelectedItem } from './filter'
 import * as ls from './local-storage'
 
 const { ATTR } = CONSTS
@@ -33,16 +29,15 @@ export function validateOptions({
 } = {}) {
   let validated = {}
 
-  if (!(rootNode instanceof HTMLElement))
-    throw new Error('rootNode must be specified')
+  if (!(rootNode instanceof HTMLElement)) throw new Error('rootNode must be specified')
   validated.rootNode = rootNode
   let uid = rootNode.getAttribute(ATTR.id) || ''
-  validated.filterSelects = Array.from(
-    rootNode.querySelectorAll(`select[${ATTR.filter}]`)
-  ).map(sel => {
-    sel.setAttribute(ATTR.filter, (sel.getAttribute(ATTR.filter) || '') + uid)
-    return sel
-  })
+  validated.filterSelects = Array.from(rootNode.querySelectorAll(`select[${ATTR.filter}]`)).map(
+    sel => {
+      sel.setAttribute(ATTR.filter, (sel.getAttribute(ATTR.filter) || '') + uid)
+      return sel
+    },
+  )
   validated.filterKeys = validated.filterSelects
     .map(sel => sel.getAttribute(ATTR.filter))
     .filter(Boolean)
@@ -59,8 +54,7 @@ export function validateOptions({
   })
 
   let url = rootNode.getAttribute(ATTR.csv_url)
-  if (typeof url !== 'string' && !fetchData)
-    throw new Error('URL or `fetchData` must be specified')
+  if (typeof url !== 'string' && !fetchData) throw new Error('URL or `fetchData` must be specified')
 
   validated.collectionHandle =
     typeof collectionHandle === 'string'
@@ -70,12 +64,9 @@ export function validateOptions({
   validated.onEvent = typeof onEvent === 'function' ? onEvent : null
   validated.autoSearch = !!autoSearch || rootNode.hasAttribute(ATTR.auto_search)
   validated.resetNextSelectsOnChange =
-    !!resetNextSelectsOnChange ||
-    rootNode.hasAttribute(ATTR.rest_next_selects_on_change)
-  validated.hasCsvHeaders =
-    !!hasCsvHeaders || rootNode.hasAttribute(ATTR.csv_headers)
-  validated.isFitmentWidget =
-    !!isFitmentWidget || rootNode.hasAttribute(ATTR.fitment_widget)
+    !!resetNextSelectsOnChange || rootNode.hasAttribute(ATTR.rest_next_selects_on_change)
+  validated.hasCsvHeaders = !!hasCsvHeaders || rootNode.hasAttribute(ATTR.csv_headers)
+  validated.isFitmentWidget = !!isFitmentWidget || rootNode.hasAttribute(ATTR.fitment_widget)
   validated.loadingBtnClass = (
     typeof loadingBtnClass == 'string'
       ? loadingBtnClass
@@ -85,37 +76,29 @@ export function validateOptions({
     .filter(Boolean)
   if (validated.loadingBtnClass.length === 0) validated.loadingBtnClass = null
 
-  validated.filteredLinks = Array.from(
-    rootNode.querySelectorAll(`a[${ATTR.filtered_link}]`)
-  )
-  validated.filteredTitle = Array.from(
-    rootNode.querySelectorAll(`[${ATTR.filtered_title}]`)
-  )
+  validated.filteredLinks = Array.from(rootNode.querySelectorAll(`a[${ATTR.filtered_link}]`))
+  validated.filteredTitle = Array.from(rootNode.querySelectorAll(`[${ATTR.filtered_title}]`))
   validated.triggerVerifyBtns = Array.from(
-    rootNode.querySelectorAll(`[${ATTR.filter_trigger_verify}]`)
+    rootNode.querySelectorAll(`[${ATTR.filter_trigger_verify}]`),
   )
-  validated.toggleOpenBtns = Array.from(
-    rootNode.querySelectorAll(`[${ATTR.toggle_open}]`)
-  )
+  validated.toggleOpenBtns = Array.from(rootNode.querySelectorAll(`[${ATTR.toggle_open}]`))
 
-  Array.from(rootNode.querySelectorAll(`[${ATTR.loading_on_click}]`)).forEach(
-    el => {
-      el.__ezs_loadable = true
-    }
-  )
-
-  // reset `selects` - (maybe Clear cache as well)
-  validated.gotoPendingBtns = Array.from(
-    rootNode.querySelectorAll(`[${ATTR.goto_pending}]`)
-  ).map(btn => {
-    let clearCache = btn.hasAttribute(ATTR.clear_cache)
-    if (clearCache) btn.__ezs_clear_cache = true
-
-    return btn
+  Array.from(rootNode.querySelectorAll(`[${ATTR.loading_on_click}]`)).forEach(el => {
+    el.__ezs_loadable = true
   })
 
+  // reset `selects` - (maybe Clear cache as well)
+  validated.gotoPendingBtns = Array.from(rootNode.querySelectorAll(`[${ATTR.goto_pending}]`)).map(
+    btn => {
+      let clearCache = btn.hasAttribute(ATTR.clear_cache)
+      if (clearCache) btn.__ezs_clear_cache = true
+
+      return btn
+    },
+  )
+
   validated.gotoBaseCollectionBtns = Array.from(
-    rootNode.querySelectorAll(`[${ATTR.goto_base_collection}]`)
+    rootNode.querySelectorAll(`[${ATTR.goto_base_collection}]`),
   ).map(btn => {
     let clearCache = btn.hasAttribute(ATTR.clear_cache)
     if (clearCache) btn.__ezs_clear_cache = true
@@ -209,16 +192,12 @@ export async function hydrateEZSearch(options) {
     Array.from({ length: filterKeys.length }, (_, i) => [
       filterKeys[i],
       !canCache || preClearCache ? '' : ls.get(filterKeys[i]) || '',
-    ])
+    ]),
   )
 
   let filterTree = null // {}
 
-  function updateOptions({
-    selectIndex,
-    updateSelectValue = false,
-    forcePending = false,
-  } = {}) {
+  function updateOptions({ selectIndex, updateSelectValue = false, forcePending = false } = {}) {
     let activeFiltersList = [...activeFilters]
     activeFiltersList.forEach(([label, filterValue], idx) => {
       const filterObject = getCurrentFilterObject({
@@ -235,8 +214,7 @@ export async function hydrateEZSearch(options) {
       const select = selects[idx]
 
       const filterOptions = filterObject?._keys_ || []
-      const hasFilterOptions =
-        Array.isArray(filterOptions) && filterOptions.length > 0
+      const hasFilterOptions = Array.isArray(filterOptions) && filterOptions.length > 0
       select.disabled = !hasFilterOptions
 
       if (canCache) {
@@ -288,13 +266,8 @@ export async function hydrateEZSearch(options) {
     fromCache = false,
     preventAutosearch = false,
   } = {}) {
-    let allSelected = [...activeFilters].every(
-      ([, filterValue]) => !!filterValue
-    )
-    rootNode.setAttribute(
-      'data-ezs-selected-filters',
-      allSelected ? 'all' : 'partial'
-    )
+    let allSelected = [...activeFilters].every(([, filterValue]) => !!filterValue)
+    rootNode.setAttribute('data-ezs-selected-filters', allSelected ? 'all' : 'partial')
 
     // Check if there is any valid selection
     let selectedItem = forcePending
@@ -309,7 +282,7 @@ export async function hydrateEZSearch(options) {
 
     rootNode.setAttribute(
       'data-ezs-state',
-      !selectedItem ? 'pending' : hasTag ? 'valid' : 'invalid'
+      !selectedItem ? 'pending' : hasTag ? 'valid' : 'invalid',
     )
 
     if (filterForm) {
@@ -332,7 +305,7 @@ export async function hydrateEZSearch(options) {
           },
           bubbles: false,
           cancelable: false,
-        })
+        }),
       )
     }
 
@@ -353,9 +326,7 @@ export async function hydrateEZSearch(options) {
       el.textContent = selectedItemTitle
     })
 
-    selectedItem
-      ? ls.set('selectedItem', JSON.stringify(selectedItem))
-      : ls.remove('selectedItem')
+    selectedItem ? ls.set('selectedItem', JSON.stringify(selectedItem)) : ls.remove('selectedItem')
 
     let canSubmit = finalHref && filterForm && autoSearch && !preventAutosearch
     if (canSubmit) {
@@ -492,7 +463,7 @@ export async function hydrateEZSearch(options) {
             target.classList.add(clx)
           })
         }
-      })
+      }),
     )
 
     updateOptions({ selectIndex: -1 })
@@ -520,45 +491,80 @@ export async function hydrateEZSearch(options) {
       let allValid = true
       let filterKeysCount = filterKeys.length
 
-      let parsed = listOfArrays
-        .map(line => {
-          if (allValid && line.length - 1 !== filterKeysCount) {
-            log.error('CSV data and `filterKeys` mismatch', {
-              filterKeys,
-              line: line,
-            })
+      let yearKeyIndex = filterKeys.findIndex(key => key.toLowerCase() === 'year')
+      // has hear?
+      if (yearKeyIndex !== -1) {
+        listOfArrays = listOfArrays.reduce((list, line) => {
+          const yearValue = line[yearKeyIndex]
 
-            allValid = false
+          // 2010-2015
+          const isRange = yearValue.includes('-')
+          if (!isRange) {
+            list.push(line)
+            return list
+          }
+          let [startYear, endYear] = yearValue
+            .split('-')
+            .map(x => Number(x))
+            .reduce((list, num) => {
+              list.push(Number.isNaN(num) ? null : num)
+              return list
+            }, [])
+
+          if (startYear && endYear) {
+            for (let year = startYear; year <= endYear; year++) {
+              list.push(line.map((value, i) => (i === yearKeyIndex ? year : value)))
+            }
+            return list
           }
 
-          if (!allValid) return []
-
-          // last item is the value
-          const value = line[filterKeys.length]
-          const unsupported = value.includes('$$$products$$$')
-          if (unsupported) return []
-
-          let item = line.reduce((acc, v, idx) => {
-            let label = filterKeys[idx]
-
-            if (label) {
-              acc[label] = v
-            } else {
-              let cleanUrl = v.split('$$')[0]
-              if (typeof cleanUrl === 'string') {
-                cleanUrl = cleanUrl.replace('/collection/', '/collections/')
-              }
-              acc._path = baseColHandle
-                ? cleanUrl.replace('/all/', `/${baseColHandle}/`)
-                : cleanUrl
-              acc._tag = last(cleanUrl.split('/'))
+          if (!endYear) {
+            if (startYear) {
+              list.push(line.map((value, i) => (i === yearKeyIndex ? startYear : value)))
+              return list
             }
+          }
 
-            return acc
-          }, {})
+          return list
+        }, [])
+      }
 
-          return item
-        })
+      let parsed = listOfArrays.map(line => {
+        if (allValid && line.length - 1 !== filterKeysCount) {
+          log.error('CSV data and `filterKeys` mismatch', {
+            filterKeys,
+            line: line,
+          })
+
+          allValid = false
+        }
+
+        if (!allValid) return []
+
+        // last item is the value
+        const value = line[filterKeys.length]
+        const unsupported = value.includes('$$$products$$$')
+        if (unsupported) return []
+
+        let item = line.reduce((acc, v, idx) => {
+          let label = filterKeys[idx]
+
+          if (label) {
+            acc[label] = v
+          } else {
+            let cleanUrl = v.split('$$')[0]
+            if (typeof cleanUrl === 'string') {
+              cleanUrl = cleanUrl.replace('/collection/', '/collections/')
+            }
+            acc._path = baseColHandle ? cleanUrl.replace('/all/', `/${baseColHandle}/`) : cleanUrl
+            acc._tag = last(cleanUrl.split('/'))
+          }
+
+          return acc
+        }, {})
+
+        return item
+      })
 
       if (!allValid) {
         throw new Error('CSV data and `filterKeys` mismatch')

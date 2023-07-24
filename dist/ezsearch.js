@@ -290,12 +290,12 @@ var __async = (__this, __arguments, generator) => {
       throw new Error("rootNode must be specified");
     validated.rootNode = rootNode;
     let uid = rootNode.getAttribute(ATTR.id) || "";
-    validated.filterSelects = Array.from(
-      rootNode.querySelectorAll(`select[${ATTR.filter}]`)
-    ).map((sel) => {
-      sel.setAttribute(ATTR.filter, (sel.getAttribute(ATTR.filter) || "") + uid);
-      return sel;
-    });
+    validated.filterSelects = Array.from(rootNode.querySelectorAll(`select[${ATTR.filter}]`)).map(
+      (sel) => {
+        sel.setAttribute(ATTR.filter, (sel.getAttribute(ATTR.filter) || "") + uid);
+        return sel;
+      }
+    );
     validated.filterKeys = validated.filterSelects.map((sel) => sel.getAttribute(ATTR.filter)).filter(Boolean);
     if (validated.filterKeys.length < 1 || validated.filterSelects.length !== validated.filterKeys.length) {
       throw new Error("Filter keys/selects mismatch");
@@ -316,31 +316,23 @@ var __async = (__this, __arguments, generator) => {
     validated.loadingBtnClass = (typeof loadingBtnClass == "string" ? loadingBtnClass : rootNode.getAttribute(ATTR.loading_btn_class) || "").split(" ").filter(Boolean);
     if (validated.loadingBtnClass.length === 0)
       validated.loadingBtnClass = null;
-    validated.filteredLinks = Array.from(
-      rootNode.querySelectorAll(`a[${ATTR.filtered_link}]`)
-    );
-    validated.filteredTitle = Array.from(
-      rootNode.querySelectorAll(`[${ATTR.filtered_title}]`)
-    );
+    validated.filteredLinks = Array.from(rootNode.querySelectorAll(`a[${ATTR.filtered_link}]`));
+    validated.filteredTitle = Array.from(rootNode.querySelectorAll(`[${ATTR.filtered_title}]`));
     validated.triggerVerifyBtns = Array.from(
       rootNode.querySelectorAll(`[${ATTR.filter_trigger_verify}]`)
     );
-    validated.toggleOpenBtns = Array.from(
-      rootNode.querySelectorAll(`[${ATTR.toggle_open}]`)
-    );
-    Array.from(rootNode.querySelectorAll(`[${ATTR.loading_on_click}]`)).forEach(
-      (el) => {
-        el.__ezs_loadable = true;
+    validated.toggleOpenBtns = Array.from(rootNode.querySelectorAll(`[${ATTR.toggle_open}]`));
+    Array.from(rootNode.querySelectorAll(`[${ATTR.loading_on_click}]`)).forEach((el) => {
+      el.__ezs_loadable = true;
+    });
+    validated.gotoPendingBtns = Array.from(rootNode.querySelectorAll(`[${ATTR.goto_pending}]`)).map(
+      (btn) => {
+        let clearCache = btn.hasAttribute(ATTR.clear_cache);
+        if (clearCache)
+          btn.__ezs_clear_cache = true;
+        return btn;
       }
     );
-    validated.gotoPendingBtns = Array.from(
-      rootNode.querySelectorAll(`[${ATTR.goto_pending}]`)
-    ).map((btn) => {
-      let clearCache = btn.hasAttribute(ATTR.clear_cache);
-      if (clearCache)
-        btn.__ezs_clear_cache = true;
-      return btn;
-    });
     validated.gotoBaseCollectionBtns = Array.from(
       rootNode.querySelectorAll(`[${ATTR.goto_base_collection}]`)
     ).map((btn) => {
@@ -422,11 +414,7 @@ var __async = (__this, __arguments, generator) => {
         ])
       );
       let filterTree = null;
-      function updateOptions({
-        selectIndex,
-        updateSelectValue = false,
-        forcePending = false
-      } = {}) {
+      function updateOptions({ selectIndex, updateSelectValue = false, forcePending = false } = {}) {
         let activeFiltersList = [...activeFilters];
         activeFiltersList.forEach(([label, filterValue], idx) => {
           const filterObject = getCurrentFilterObject({
@@ -476,13 +464,8 @@ var __async = (__this, __arguments, generator) => {
         fromCache = false,
         preventAutosearch = false
       } = {}) {
-        let allSelected = [...activeFilters].every(
-          ([, filterValue]) => !!filterValue
-        );
-        rootNode.setAttribute(
-          "data-ezs-selected-filters",
-          allSelected ? "all" : "partial"
-        );
+        let allSelected = [...activeFilters].every(([, filterValue]) => !!filterValue);
+        rootNode.setAttribute("data-ezs-selected-filters", allSelected ? "all" : "partial");
         let selectedItem = forcePending ? null : fromCache ? safeJsonParse(get("selectedItem"), "null") : getSelectedItem({ keys: filterKeys, activeFilters, filterTree });
         let finalHref = selectedItem == null ? void 0 : selectedItem._path;
         let tag = selectedItem == null ? void 0 : selectedItem._tag;
@@ -665,6 +648,34 @@ var __async = (__this, __arguments, generator) => {
               listOfArrays = listOfArrays.slice(1);
             let allValid = true;
             let filterKeysCount = filterKeys.length;
+            let yearKeyIndex = filterKeys.findIndex((key) => key.toLowerCase() === "year");
+            if (yearKeyIndex !== -1) {
+              listOfArrays = listOfArrays.reduce((list, line) => {
+                const yearValue = line[yearKeyIndex];
+                const isRange = yearValue.includes("-");
+                if (!isRange) {
+                  list.push(line);
+                  return list;
+                }
+                let [startYear, endYear] = yearValue.split("-").map((x) => Number(x)).reduce((list2, num) => {
+                  list2.push(Number.isNaN(num) ? null : num);
+                  return list2;
+                }, []);
+                if (startYear && endYear) {
+                  for (let year = startYear; year <= endYear; year++) {
+                    list.push(line.map((value, i) => i === yearKeyIndex ? year : value));
+                  }
+                  return list;
+                }
+                if (!endYear) {
+                  if (startYear) {
+                    list.push(line.map((value, i) => i === yearKeyIndex ? startYear : value));
+                    return list;
+                  }
+                }
+                return list;
+              }, []);
+            }
             let parsed = listOfArrays.map((line) => {
               if (allValid && line.length - 1 !== filterKeysCount) {
                 log.error("CSV data and `filterKeys` mismatch", {
