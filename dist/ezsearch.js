@@ -199,7 +199,20 @@ var __async = (__this, __arguments, generator) => {
         let resInnerObj = keys.slice(0, keyIndex).reduce((x, k2) => x[obj[k2]], res);
         if (!resInnerObj)
           return;
-        resInnerObj[value] = isLastKeyIndex ? item : {};
+        if (isLastKeyIndex) {
+          const rootValue = new RootValue(item);
+          if (resInnerObj[value]) {
+            if (Array.isArray(resInnerObj[value])) {
+              resInnerObj[value].push(rootValue);
+            } else {
+              resInnerObj[value] = [resInnerObj[value], rootValue];
+            }
+          } else {
+            resInnerObj[value] = rootValue;
+          }
+        } else {
+          resInnerObj[value] = {};
+        }
       });
     });
     return Object.keys(res).length > 0 ? iterateOverObjectTree(res, (obj, keys2, levelIndex) => {
@@ -241,6 +254,11 @@ var __async = (__this, __arguments, generator) => {
         return null;
       return (value == null ? void 0 : value[filterValue]) || null;
     }, filterTree);
+  }
+  class RootValue {
+    constructor(value) {
+      this.value = value;
+    }
   }
   const getKey = (key) => `ezs_${key}`;
   const expiryKey = (key) => `${key}__expiresIn`;
@@ -464,9 +482,18 @@ var __async = (__this, __arguments, generator) => {
         fromCache = false,
         preventAutosearch = false
       } = {}) {
+        var _a;
         let allSelected = [...activeFilters].every(([, filterValue]) => !!filterValue);
         rootNode.setAttribute("data-ezs-selected-filters", allSelected ? "all" : "partial");
-        let selectedItem = forcePending ? null : fromCache ? safeJsonParse(get("selectedItem"), "null") : getSelectedItem({ keys: filterKeys, activeFilters, filterTree });
+        let selectedItemRoot = forcePending ? null : fromCache ? safeJsonParse(get("selectedItem"), "null") : getSelectedItem({ keys: filterKeys, activeFilters, filterTree });
+        let selectedItem = selectedItemRoot instanceof RootValue ? selectedItemRoot.value : null;
+        if (Array.isArray(selectedItemRoot)) {
+          selectedItem = ((_a = selectedItemRoot.find((rootInstance) => {
+            var _a2;
+            const t = (_a2 = rootInstance.value) == null ? void 0 : _a2._tag;
+            return !!prodcutTagsLookup[t];
+          })) == null ? void 0 : _a.value) || null;
+        }
         let finalHref = selectedItem == null ? void 0 : selectedItem._path;
         let tag = selectedItem == null ? void 0 : selectedItem._tag;
         let hasTag = prodcutTagsLookup ? prodcutTagsLookup[tag] : null;
@@ -686,10 +713,18 @@ var __async = (__this, __arguments, generator) => {
               }
               if (!allValid)
                 return [];
-              const value = line[filterKeys.length];
-              const unsupported = value.includes("$$$products$$$");
-              if (unsupported)
-                return [];
+              let value = line[filterKeys.length];
+              const maybeSupported = value.includes("$$$products$$$");
+              if (maybeSupported) {
+                const [colTaggedUrl] = value.split("$$$products$$$");
+                const prefix = "/collections/all/";
+                if (colTaggedUrl.startsWith(prefix) && colTaggedUrl.length > prefix.length) {
+                  value = colTaggedUrl;
+                  line[filterKeys.length] = value;
+                } else {
+                  return [];
+                }
+              }
               let item = line.reduce((acc, v, idx) => {
                 let label = filterKeys[idx];
                 if (label) {

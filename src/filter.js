@@ -68,7 +68,23 @@ export function createFiltersTree({
       let resInnerObj = keys.slice(0, keyIndex).reduce((x, k) => x[obj[k]], res)
       if (!resInnerObj) return
 
-      resInnerObj[value] = isLastKeyIndex ? item : {}
+      if (isLastKeyIndex) {
+        const rootValue = new RootValue(item)
+        // if there's something already
+        if (resInnerObj[value]) {
+          if (Array.isArray(resInnerObj[value])) {
+            resInnerObj[value].push(rootValue)
+          } else {
+            resInnerObj[value] = [resInnerObj[value], rootValue]
+          }
+        } else {
+          resInnerObj[value] = rootValue
+        }
+      } else {
+        resInnerObj[value] = {}
+      }
+
+      // resInnerObj[value] = isLastKeyIndex ? item : {}
     })
   })
 
@@ -118,3 +134,10 @@ export function getSelectedItem({ keys, filterTree, activeFilters }) {
     return value?.[filterValue] || null
   }, filterTree)
 }
+
+export class RootValue {
+  constructor(value) {
+    this.value = value
+  }
+}
+

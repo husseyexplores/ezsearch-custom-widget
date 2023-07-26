@@ -8,7 +8,7 @@ import {
   log,
   CONSTS,
 } from './utils'
-import { createFiltersTree, getCurrentFilterObject, getSelectedItem } from './filter'
+import { RootValue, createFiltersTree, getCurrentFilterObject, getSelectedItem } from './filter'
 import * as ls from './local-storage'
 
 const { ATTR } = CONSTS
@@ -270,11 +270,22 @@ export async function hydrateEZSearch(options) {
     rootNode.setAttribute('data-ezs-selected-filters', allSelected ? 'all' : 'partial')
 
     // Check if there is any valid selection
-    let selectedItem = forcePending
+    let selectedItemRoot = forcePending
       ? null
       : fromCache
       ? safeJsonParse(ls.get('selectedItem'), 'null')
       : getSelectedItem({ keys: filterKeys, activeFilters, filterTree })
+
+    let selectedItem = selectedItemRoot instanceof RootValue ? selectedItemRoot.value : null
+    
+    // multiple matches
+    if (Array.isArray(selectedItemRoot)) {
+      selectedItem = selectedItemRoot.find(rootInstance => {
+        const t = rootInstance.value?._tag
+        return !!prodcutTagsLookup[t]
+      })?.value || null
+    }
+
     let finalHref = selectedItem?._path
 
     let tag = selectedItem?._tag
@@ -542,9 +553,18 @@ export async function hydrateEZSearch(options) {
         if (!allValid) return []
 
         // last item is the value
-        const value = line[filterKeys.length]
-        const unsupported = value.includes('$$$products$$$')
-        if (unsupported) return []
+        let value = line[filterKeys.length]
+        const maybeSupported = value.includes('$$$products$$$')
+        if (maybeSupported) {
+          const [colTaggedUrl] = value.split('$$$products$$$')
+          const prefix = '/collections/all/'
+          if (colTaggedUrl.startsWith(prefix) && colTaggedUrl.length > prefix.length) {
+            value = colTaggedUrl
+            line[filterKeys.length] = value
+          } else {
+            return []
+          }
+        }
 
         let item = line.reduce((acc, v, idx) => {
           let label = filterKeys[idx]
