@@ -291,6 +291,7 @@ var __async = (__this, __arguments, generator) => {
   const { ATTR } = CONSTS;
   let _FILTER_TREE_CACHE = {};
   function validateOptions({
+    url = void 0,
     rootNode,
     fetchData,
     collectionHandle,
@@ -303,7 +304,7 @@ var __async = (__this, __arguments, generator) => {
     isFitmentWidget = false,
     loadingBtnClass = "btn--loading"
   } = {}) {
-    let validated = {};
+    let validated = { __validated: true };
     if (!(rootNode instanceof HTMLElement))
       throw new Error("rootNode must be specified");
     validated.rootNode = rootNode;
@@ -322,9 +323,11 @@ var __async = (__this, __arguments, generator) => {
       let desc = select.getAttribute(ATTR.sort_by) === "desc";
       return { desc, asc: !desc };
     });
-    let url = rootNode.getAttribute(ATTR.csv_url);
-    if (typeof url !== "string" && !fetchData)
-      throw new Error("URL or `fetchData` must be specified");
+    if (typeof url != "string" || !url.trim()) {
+      url = rootNode.getAttribute(ATTR.csv_url);
+      if (typeof url !== "string" && !fetchData)
+        throw new Error("URL or `fetchData` must be specified");
+    }
     validated.collectionHandle = typeof collectionHandle === "string" ? collectionHandle : rootNode.getAttribute(ATTR.coll_handle) || "all";
     validated.onEvent = typeof onEvent === "function" ? onEvent : null;
     validated.autoSearch = !!autoSearch || rootNode.hasAttribute(ATTR.auto_search);
@@ -408,7 +411,7 @@ var __async = (__this, __arguments, generator) => {
         isFitmentWidget,
         filterKeysSortBy,
         resetNextSelectsOnChange
-      } = validateOptions(options);
+      } = options.__validated ? options : validateOptions(options);
       if (rootNode.__ezs_hydrated) {
         log("Already hydrated");
         return;
@@ -482,17 +485,16 @@ var __async = (__this, __arguments, generator) => {
         fromCache = false,
         preventAutosearch = false
       } = {}) {
-        var _a;
         let allSelected = [...activeFilters].every(([, filterValue]) => !!filterValue);
         rootNode.setAttribute("data-ezs-selected-filters", allSelected ? "all" : "partial");
         let selectedItemRoot = forcePending ? null : fromCache ? safeJsonParse(get("selectedItem"), "null") : getSelectedItem({ keys: filterKeys, activeFilters, filterTree });
         let selectedItem = selectedItemRoot instanceof RootValue ? selectedItemRoot.value : null;
         if (Array.isArray(selectedItemRoot)) {
-          selectedItem = ((_a = selectedItemRoot.find((rootInstance) => {
-            var _a2;
-            const t = (_a2 = rootInstance.value) == null ? void 0 : _a2._tag;
+          selectedItem = ((prodcutTagsLookup ? selectedItemRoot.find((rootInstance) => {
+            var _a;
+            const t = (_a = rootInstance.value) == null ? void 0 : _a._tag;
             return !!prodcutTagsLookup[t];
-          })) == null ? void 0 : _a.value) || null;
+          }) : null) || selectedItemRoot[0]).value;
         }
         let finalHref = selectedItem == null ? void 0 : selectedItem._path;
         let tag = selectedItem == null ? void 0 : selectedItem._tag;
@@ -803,28 +805,40 @@ var __async = (__this, __arguments, generator) => {
   const styles = "";
   window.EZSearchDefaultInstances = [];
   function initializeEZSearch() {
-    const searchRoots = Array.from(
-      document.querySelectorAll(
-        '[data-ezs="search"]:not([data-ezs-auto-initialize="false"])'
-      )
-    );
-    searchRoots.forEach((rootNode) => {
-      document.dispatchEvent(
-        new CustomEvent("EZSearch_Loading", {
-          detail: rootNode
-        })
+    return __async(this, null, function* () {
+      const searchRoots = Array.from(
+        document.querySelectorAll(
+          '[data-ezs="search"]:not([data-ezs-auto-initialize="false"])'
+        )
       );
-      hydrateEZSearch({
-        rootNode,
-        onEvent: null
-      }).then((instance) => {
-        window.EZSearchDefaultInstances.push(instance);
+      searchRoots.forEach((rootNode) => __async(this, null, function* () {
+        var _a, _b;
         document.dispatchEvent(
-          new CustomEvent("EZSearch_Loaded", {
+          new CustomEvent("EZSearch_Loading", {
             detail: rootNode
           })
         );
-      });
+        const configUrl = rootNode.getAttribute("data-ezs-config-url");
+        let dburl = "";
+        if (configUrl) {
+          const result = yield fetch(configUrl).then((res) => res.json());
+          if ((_b = (_a = result == null ? void 0 : result.settings) == null ? void 0 : _a.form) == null ? void 0 : _b.db) {
+            dburl = result.settings.form.db;
+          }
+        }
+        hydrateEZSearch({
+          url: dburl,
+          rootNode,
+          onEvent: null
+        }).then((instance) => {
+          window.EZSearchDefaultInstances.push(instance);
+          document.dispatchEvent(
+            new CustomEvent("EZSearch_Loaded", {
+              detail: rootNode
+            })
+          );
+        });
+      }));
     });
   }
   domReady().then(initializeEZSearch);

@@ -5,7 +5,7 @@ const IS_PROD = import.meta.env.MODE !== 'development'
 
 window.EZSearchDefaultInstances = []
 
-if (!window.customElements.get('x-ezsearch-custom')) {
+if (!window.customElements.get('x-ezsearch')) {
   class EZSearchCustomWidget extends HTMLElement {
     connectedCallback() {
       this._disposables = []
@@ -14,37 +14,32 @@ if (!window.customElements.get('x-ezsearch-custom')) {
       this._options = validateOptions({
         rootNode: this,
         onEvent: IS_PROD
-        ? null
-        : (ev, data) => {
-            let value = data?.select?.value
-            value ? console.log(ev, data, value) : console.log(ev, data)
-          },
+          ? null
+          : (ev, data) => {
+              let value = data?.select?.value
+              value ? console.log(ev, data, value) : console.log(ev, data)
+            },
       })
 
       document.dispatchEvent(
         new CustomEvent('EZSearch_Loading', {
-          detail: { element: this }
-        })
+          detail: { element: this },
+        }),
       )
 
-      hydrateEZSearch({
-        rootNode: this,
-        onEvent: IS_PROD
-        ? null
-        : (ev, data) => {
-            let value = data?.select?.value
-            value ? console.log(ev, data, value) : console.log(ev, data)
-          },
-      }).then(instance => {
+      hydrateEZSearch(this._options).then(instance => {
+        this._instance = instance
         window.EZSearchDefaultInstances.push(instance)
 
         document.dispatchEvent(
           new CustomEvent('EZSearch_Loaded', {
-            detail: { element: this }
-          })
+            detail: { element: this },
+          }),
         )
-      })
 
+        this.removeAttribute('dehydrated')
+        this._hydrated = true
+      })
     }
 
     disconnectedCallback() {
@@ -65,10 +60,10 @@ if (!window.customElements.get('x-ezsearch-custom')) {
       }
 
       return EZSearchCustomWidget.cache[url]
-    }
+    },
   }
 
-  window.customElements.define('x-ezsearch-custom', EZSearchCustomWidget)
+  window.customElements.define('x-ezsearch', EZSearchCustomWidget)
 }
 
 export default {

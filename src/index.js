@@ -6,21 +6,31 @@ const IS_PROD = import.meta.env.MODE !== 'development'
 
 window.EZSearchDefaultInstances = []
 
-function initializeEZSearch() {
+async function initializeEZSearch() {
   const searchRoots = Array.from(
     document.querySelectorAll(
       '[data-ezs="search"]:not([data-ezs-auto-initialize="false"])'
     )
   )
 
-  searchRoots.forEach(rootNode => {
+  searchRoots.forEach(async rootNode => {
     document.dispatchEvent(
       new CustomEvent('EZSearch_Loading', {
         detail: rootNode,
       })
     )
 
+    const configUrl = rootNode.getAttribute('data-ezs-config-url')
+    let dburl = ''
+    if (configUrl) {
+      const result = await fetch(configUrl).then(res => res.json())
+      if (result?.settings?.form?.db) {
+        dburl = result.settings.form.db
+      }
+    }
+
     hydrateEZSearch({
+      url: dburl,
       rootNode,
       onEvent: IS_PROD
         ? null

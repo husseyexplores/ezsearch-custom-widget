@@ -15,6 +15,7 @@ const { ATTR } = CONSTS
 let _FILTER_TREE_CACHE = {}
 
 export function validateOptions({
+  url = undefined,
   rootNode,
   fetchData,
   collectionHandle,
@@ -27,7 +28,7 @@ export function validateOptions({
   isFitmentWidget = false,
   loadingBtnClass = 'btn--loading',
 } = {}) {
-  let validated = {}
+  let validated = { __validated: true }
 
   if (!(rootNode instanceof HTMLElement)) throw new Error('rootNode must be specified')
   validated.rootNode = rootNode
@@ -53,8 +54,11 @@ export function validateOptions({
     return { desc, asc: !desc }
   })
 
-  let url = rootNode.getAttribute(ATTR.csv_url)
-  if (typeof url !== 'string' && !fetchData) throw new Error('URL or `fetchData` must be specified')
+  if (typeof url != 'string' || !url.trim()) {
+    url = rootNode.getAttribute(ATTR.csv_url)
+    if (typeof url !== 'string' && !fetchData)
+      throw new Error('URL or `fetchData` must be specified')
+  }
 
   validated.collectionHandle =
     typeof collectionHandle === 'string'
@@ -135,9 +139,15 @@ export function validateOptions({
     validated.filterFormSubmitBtn = filterForm.querySelector('[type="submit"]')
   }
 
+
   return validated
 }
 
+/**
+ *
+ * @param {ReturnType<typeof validateOptions>} options
+ * @returns
+ */
 export async function hydrateEZSearch(options) {
   const {
     filterSelects: selects,
@@ -164,7 +174,7 @@ export async function hydrateEZSearch(options) {
     isFitmentWidget,
     filterKeysSortBy,
     resetNextSelectsOnChange,
-  } = validateOptions(options)
+  } = options.__validated ? options : validateOptions(options)
 
   if (rootNode.__ezs_hydrated) {
     log('Already hydrated')
@@ -277,13 +287,17 @@ export async function hydrateEZSearch(options) {
       : getSelectedItem({ keys: filterKeys, activeFilters, filterTree })
 
     let selectedItem = selectedItemRoot instanceof RootValue ? selectedItemRoot.value : null
-    
+
     // multiple matches
     if (Array.isArray(selectedItemRoot)) {
-      selectedItem = selectedItemRoot.find(rootInstance => {
-        const t = rootInstance.value?._tag
-        return !!prodcutTagsLookup[t]
-      })?.value || null
+      selectedItem = (
+        (prodcutTagsLookup
+          ? selectedItemRoot.find(rootInstance => {
+              const t = rootInstance.value?._tag
+              return !!prodcutTagsLookup[t]
+            })
+          : null) || selectedItemRoot[0]
+      ).value
     }
 
     let finalHref = selectedItem?._path
