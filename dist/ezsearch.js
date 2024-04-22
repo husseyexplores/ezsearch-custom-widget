@@ -485,6 +485,16 @@ var __async = (__this, __arguments, generator) => {
           index: selectIndex,
           select: selects[selectIndex]
         });
+        rootNode.dispatchEvent(
+          new CustomEvent("ezsearch::selection_update", {
+            detail: {
+              index: selectIndex,
+              select: selects[selectIndex]
+            },
+            bubbles: false,
+            cancelable: false
+          })
+        );
       }
       function afterOptionsUpdate({
         forcePending = false,
@@ -537,7 +547,7 @@ var __async = (__this, __arguments, generator) => {
         if (selectedItem) {
           onEvent == null ? void 0 : onEvent("SELECTION_COMPLETE", { selected: selectedItem });
           rootNode.dispatchEvent(
-            new CustomEvent("EZSearch_Selected", {
+            new CustomEvent("ezsearch::selection_complete", {
               detail: {
                 selected: selectedItem,
                 fits: hasTag == null ? void 0 : !!hasTag

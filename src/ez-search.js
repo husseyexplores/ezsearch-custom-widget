@@ -282,6 +282,17 @@ export async function hydrateEZSearch(options) {
       index: selectIndex,
       select: selects[selectIndex],
     })
+
+    rootNode.dispatchEvent(
+      new CustomEvent('ezsearch::selection_update', {
+        detail: {
+          index: selectIndex,
+          select: selects[selectIndex],
+        },
+        bubbles: false,
+        cancelable: false,
+      }),
+    )
   }
 
   function afterOptionsUpdate({
@@ -353,7 +364,7 @@ export async function hydrateEZSearch(options) {
       onEvent?.('SELECTION_COMPLETE', { selected: selectedItem })
 
       rootNode.dispatchEvent(
-        new CustomEvent('EZSearch_Selected', {
+        new CustomEvent('ezsearch::selection_complete', {
           detail: {
             selected: selectedItem,
             fits: hasTag == null ? undefined : !!hasTag,
