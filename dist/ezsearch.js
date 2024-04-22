@@ -115,6 +115,7 @@ var __async = (__this, __arguments, generator) => {
   const CONSTS = {
     ATTR: {
       id: "data-ezs-id",
+      legacy_search: "data-legacy-search",
       filter: "data-ezs-filter",
       csv_url: "data-ezs-csv-url",
       coll_handle: "data-ezs-collection-handle",
@@ -291,6 +292,7 @@ var __async = (__this, __arguments, generator) => {
   const { ATTR } = CONSTS;
   let _FILTER_TREE_CACHE = {};
   function validateOptions({
+    legacySearch,
     url = void 0,
     rootNode,
     fetchData,
@@ -308,6 +310,9 @@ var __async = (__this, __arguments, generator) => {
     if (!(rootNode instanceof HTMLElement))
       throw new Error("rootNode must be specified");
     validated.rootNode = rootNode;
+    if (typeof legacySearch === "undefined")
+      legacySearch = rootNode.getAttribute(ATTR.legacy_search);
+    validated.legacySearch = typeof legacySearch === "boolean" ? legacySearch : legacySearch === "true" ? true : legacySearch === "false" ? false : true;
     let uid = rootNode.getAttribute(ATTR.id) || "";
     validated.filterSelects = Array.from(rootNode.querySelectorAll(`select[${ATTR.filter}]`)).map(
       (sel) => {
@@ -387,6 +392,7 @@ var __async = (__this, __arguments, generator) => {
   function hydrateEZSearch(options) {
     return __async(this, null, function* () {
       const {
+        legacySearch,
         filterSelects: selects,
         filterKeys,
         url,
@@ -504,6 +510,20 @@ var __async = (__this, __arguments, generator) => {
           !selectedItem ? "pending" : hasTag ? "valid" : "invalid"
         );
         if (filterForm) {
+          let tagInputEl = null;
+          if (!legacySearch) {
+            tagInputEl = filterForm._filter_p_tag_el;
+            if (!tagInputEl) {
+              tagInputEl = document.createElement("input");
+              tagInputEl.setAttribute("type", "hidden");
+              tagInputEl.setAttribute("name", "filter.p.tag");
+              filterForm._filter_p_tag_el = tagInputEl;
+              filterForm.appendChild(tagInputEl);
+            }
+          }
+          if (tagInputEl) {
+            tagInputEl.value = tag ? tag : "";
+          }
           if (finalHref) {
             filterForm.action = finalHref;
             if (filterFormSubmitBtn)
@@ -519,7 +539,8 @@ var __async = (__this, __arguments, generator) => {
           rootNode.dispatchEvent(
             new CustomEvent("EZSearch_Selected", {
               detail: {
-                selected: selectedItem
+                selected: selectedItem,
+                fits: hasTag == null ? void 0 : !!hasTag
               },
               bubbles: false,
               cancelable: false
@@ -716,28 +737,35 @@ var __async = (__this, __arguments, generator) => {
               if (!allValid)
                 return [];
               let value = line[filterKeys.length];
-              const maybeSupported = value.includes("$$$products$$$");
+              if (value.startsWith(">>")) {
+                value = value.slice(2);
+                line[filterKeys.length] = value;
+              }
+              const defaultColPrefix = "/collections/all/";
+              if (value.startsWith(defaultColPrefix)) {
+                value = value.slice(defaultColPrefix.length);
+              }
+              const maybeSupported = value.includes("$$$");
               if (maybeSupported) {
-                const [colTaggedUrl] = value.split("$$$products$$$");
-                const prefix = "/collections/all/";
-                if (colTaggedUrl.startsWith(prefix) && colTaggedUrl.length > prefix.length) {
-                  value = colTaggedUrl;
+                const [tag] = value.split("$$$");
+                if (tag) {
+                  value = tag;
                   line[filterKeys.length] = value;
                 } else {
                   return [];
                 }
               }
-              let item = line.reduce((acc, v, idx) => {
+              let item = line.reduce((acc, value2, idx) => {
                 let label = filterKeys[idx];
                 if (label) {
-                  acc[label] = v;
+                  acc[label] = value2;
                 } else {
-                  let cleanUrl = v.split("$$")[0];
-                  if (typeof cleanUrl === "string") {
-                    cleanUrl = cleanUrl.replace("/collection/", "/collections/");
+                  const tag = last(value2.split("/"));
+                  acc._path = `/collections/${baseColHandle || "all"}/${tag}`;
+                  acc._tag = last(tag.split("/"));
+                  if (!legacySearch) {
+                    acc._path = `/collections/${baseColHandle || "all"}?filter.p.tag=${tag}`;
                   }
-                  acc._path = baseColHandle ? cleanUrl.replace("/all/", `/${baseColHandle}/`) : cleanUrl;
-                  acc._tag = last(cleanUrl.split("/"));
                 }
                 return acc;
               }, {});

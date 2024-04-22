@@ -151,6 +151,7 @@ export function findIndexOfMap(label, map) {
 export const CONSTS = {
   ATTR: {
     id: 'data-ezs-id',
+    legacy_search: 'data-legacy-search',
     filter: 'data-ezs-filter',
     csv_url: 'data-ezs-csv-url',
     coll_handle: 'data-ezs-collection-handle',

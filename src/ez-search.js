@@ -15,6 +15,7 @@ const { ATTR } = CONSTS
 let _FILTER_TREE_CACHE = {}
 
 export function validateOptions({
+  legacySearch,
   url = undefined,
   rootNode,
   fetchData,
@@ -32,6 +33,18 @@ export function validateOptions({
 
   if (!(rootNode instanceof HTMLElement)) throw new Error('rootNode must be specified')
   validated.rootNode = rootNode
+
+  if (typeof legacySearch === 'undefined') legacySearch = rootNode.getAttribute(ATTR.legacy_search)
+
+  validated.legacySearch =
+    typeof legacySearch === 'boolean'
+      ? legacySearch
+      : legacySearch === 'true'
+      ? true
+      : legacySearch === 'false'
+      ? false
+      : true
+
   let uid = rootNode.getAttribute(ATTR.id) || ''
   validated.filterSelects = Array.from(rootNode.querySelectorAll(`select[${ATTR.filter}]`)).map(
     sel => {
@@ -139,7 +152,6 @@ export function validateOptions({
     validated.filterFormSubmitBtn = filterForm.querySelector('[type="submit"]')
   }
 
-
   return validated
 }
 
@@ -150,6 +162,7 @@ export function validateOptions({
  */
 export async function hydrateEZSearch(options) {
   const {
+    legacySearch,
     filterSelects: selects,
     filterKeys,
     url,
@@ -311,6 +324,22 @@ export async function hydrateEZSearch(options) {
     )
 
     if (filterForm) {
+      let tagInputEl = null
+      if (!legacySearch) {
+        tagInputEl = filterForm._filter_p_tag_el
+        if (!tagInputEl) {
+          tagInputEl = document.createElement('input')
+          tagInputEl.setAttribute('type', 'hidden')
+          tagInputEl.setAttribute('name', 'filter.p.tag')
+          filterForm._filter_p_tag_el = tagInputEl
+          filterForm.appendChild(tagInputEl)
+        }
+      }
+
+      if (tagInputEl) {
+        tagInputEl.value = tag ? tag : ''
+      }
+
       if (finalHref) {
         filterForm.action = finalHref
         if (filterFormSubmitBtn) filterFormSubmitBtn.disabled = false
@@ -327,6 +356,7 @@ export async function hydrateEZSearch(options) {
         new CustomEvent('EZSearch_Selected', {
           detail: {
             selected: selectedItem,
+            fits: hasTag == null ? undefined : !!hasTag,
           },
           bubbles: false,
           cancelable: false,
@@ -568,30 +598,41 @@ export async function hydrateEZSearch(options) {
 
         // last item is the value
         let value = line[filterKeys.length]
-        const maybeSupported = value.includes('$$$products$$$')
+        if (value.startsWith('>>')) {
+          value = value.slice(2)
+          line[filterKeys.length] = value
+        }
+
+        const defaultColPrefix = '/collections/all/'
+        if (value.startsWith(defaultColPrefix)) {
+          value = value.slice(defaultColPrefix.length)
+        }
+
+        const maybeSupported = value.includes('$$$')
         if (maybeSupported) {
-          const [colTaggedUrl] = value.split('$$$products$$$')
-          const prefix = '/collections/all/'
-          if (colTaggedUrl.startsWith(prefix) && colTaggedUrl.length > prefix.length) {
-            value = colTaggedUrl
+          const [tag] = value.split('$$$')
+          if (tag) {
+            value = tag
             line[filterKeys.length] = value
           } else {
             return []
           }
         }
 
-        let item = line.reduce((acc, v, idx) => {
+        let item = line.reduce((acc, value, idx) => {
           let label = filterKeys[idx]
 
           if (label) {
-            acc[label] = v
+            acc[label] = value
           } else {
-            let cleanUrl = v.split('$$')[0]
-            if (typeof cleanUrl === 'string') {
-              cleanUrl = cleanUrl.replace('/collection/', '/collections/')
+            // must be the last value (product tag or collection url)
+            const tag = last(value.split('/')) // split is not needed, but needed for backward compat reasons
+            acc._path = `/collections/${baseColHandle || 'all'}/${tag}`
+            acc._tag = last(tag.split('/'))
+
+            if (!legacySearch) {
+              acc._path = `/collections/${baseColHandle || 'all'}?filter.p.tag=${tag}`
             }
-            acc._path = baseColHandle ? cleanUrl.replace('/all/', `/${baseColHandle}/`) : cleanUrl
-            acc._tag = last(cleanUrl.split('/'))
           }
 
           return acc
