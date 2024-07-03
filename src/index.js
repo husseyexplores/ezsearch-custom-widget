@@ -21,9 +21,9 @@ async function initializeEZSearch() {
     )
 
     const configUrl = rootNode.getAttribute('data-ezs-config-url')
-    let dburl = ''
+    let dburl = rootNode.getAttribute('data-ezs-csv-url') || ''
     if (configUrl) {
-      const result = await fetch(configUrl).then(res => res.json())
+      const result = await fetch(configUrl).then(res => res.json()).catch(e => null)
       if (result?.settings?.form?.db) {
         dburl = result.settings.form.db
       }

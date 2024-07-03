@@ -21,7 +21,7 @@ export default defineConfig({
     },
     sourcemap: true,
     // Reduce bloat from legacy polyfills.
-    target: 'es6',
+    target: 'es2020',
     // Leave minification up to applications.
     minify: false,
   },

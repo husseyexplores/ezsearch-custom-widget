@@ -609,8 +609,8 @@ export async function hydrateEZSearch(options) {
 
         // last item is the value
         let value = line[filterKeys.length]
-        if (value.startsWith('>>')) {
-          value = value.slice(2)
+        if (value.startsWith('>')) {
+          value = value.replace(/^>*/g, '')
           line[filterKeys.length] = value
         }
 
